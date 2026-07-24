@@ -1,0 +1,12 @@
+'use client'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { productService, recommendationService } from '@/services'
+import { Product } from '@/types/domain'
+import ProductImage from './ProductImage'
+import FavoriteButton from './FavoriteButton'
+const money=(n:number)=>'$'+n.toLocaleString('es-AR')
+type Group={title:string;items:Product[]}
+export function CommercialHighlights(){const[groups,setGroups]=useState<Group[]>([]);useEffect(()=>{Promise.all([recommendationService.getFeatured(),recommendationService.getBestSellers(),recommendationService.getPromotions()]).then(([a,b,c])=>setGroups([{title:'Productos destacados',items:a.data},{title:'Más vendidos',items:b.data},{title:'Promociones',items:c.data}]))},[]);return <Sections groups={groups}/>} 
+export function ProductRecommendations({slug}:{slug:string}){const[groups,setGroups]=useState<Group[]>([]);useEffect(()=>{productService.getBySlug(slug).then(async response=>{const[a,b,c]=await Promise.all([recommendationService.getForProduct(response.data.id),recommendationService.getSides(),recommendationService.getFrequentlyBoughtTogether(response.data.id)]);setGroups([{title:'También podría gustarte',items:a.data},{title:'Acompañá tu pedido',items:b.data},{title:'Comprados frecuentemente juntos',items:c.data}])})},[slug]);return <Sections groups={groups}/>} 
+function Sections({groups}:{groups:Group[]}){if(!groups.length)return <section className="px-5 py-10"><div className="mx-auto h-64 max-w-7xl animate-pulse rounded-[2rem] bg-white"/></section>;return <section className="px-5 py-14 lg:px-8"><div className="mx-auto max-w-7xl space-y-14">{groups.map(group=><div key={group.title}><h2 className="font-display text-3xl text-forest">{group.title}</h2><div className="scrollbar-none mt-5 flex gap-4 overflow-x-auto pb-3">{group.items.map(product=><article key={product.id} className="relative w-56 shrink-0 overflow-hidden rounded-2xl bg-white shadow-soft"><FavoriteButton productId={product.id} className="absolute right-3 top-3 z-10 h-10 w-10"/><Link href={`/producto/${product.slug}`}><ProductImage src={product.imageUrl} alt={product.name} className="aspect-[4/3]" sizes="224px"/><div className="p-4"><b className="line-clamp-1 text-sm text-forest">{product.name}</b><p className="mt-1 text-xs font-bold text-orange">{money(product.promotionalPrice??product.price)}</p></div></Link></article>)}</div></div>)}</div></section>}

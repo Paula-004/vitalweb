@@ -1,0 +1,2 @@
+const KEY='vitalweb-demo-favorites'
+export const favoriteService={load():string[]{if(typeof window==='undefined')return[];try{return JSON.parse(localStorage.getItem(KEY)??'[]')}catch{return[]}},save(ids:string[]){if(typeof window!=='undefined')localStorage.setItem(KEY,JSON.stringify(ids))},toggle(ids:string[],productId:string){return ids.includes(productId)?ids.filter(id=>id!==productId):[...ids,productId]}}

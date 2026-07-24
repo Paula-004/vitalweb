@@ -1,0 +1,5 @@
+'use client'
+import { createContext, ReactNode, useContext, useRef, useState } from 'react'
+const Context=createContext<null|{notify:(message:string,type?:'success'|'error'|'info')=>void}>(null)
+export function NotificationProvider({children}:{children:ReactNode}){const[item,setItem]=useState<{message:string;type:string}|null>(null),timer=useRef<ReturnType<typeof setTimeout>>();const notify=(message:string,type='success')=>{setItem({message,type});if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>setItem(null),3200)};return <Context.Provider value={{notify}}>{children}{item&&<div role="status" aria-live="polite" className={`fixed bottom-5 left-1/2 z-[100] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl px-5 py-4 text-sm font-bold text-white shadow-2xl ${item.type==='error'?'bg-red-700':item.type==='info'?'bg-forest':'bg-orange'}`}>{item.message}</div>}</Context.Provider>}
+export function useNotification(){const value=useContext(Context);if(!value)throw new Error('useNotification debe usarse dentro de NotificationProvider.');return value}
