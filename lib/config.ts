@@ -22,4 +22,7 @@ export const apiEndpoints = {
   paymentMethods: process.env.NEXT_PUBLIC_API_PAYMENT_ENDPOINT,
   storeConfig: process.env.NEXT_PUBLIC_API_STORE_CONFIG_ENDPOINT,
   promotions: process.env.NEXT_PUBLIC_API_PROMOTIONS_ENDPOINT,
+  customerLogin: process.env.NEXT_PUBLIC_API_CUSTOMER_LOGIN_ENDPOINT ?? '/storefront/auth/login',
+  customerRegister: process.env.NEXT_PUBLIC_API_CUSTOMER_REGISTER_ENDPOINT ?? '/storefront/auth/register',
+  customerMe: process.env.NEXT_PUBLIC_API_CUSTOMER_ME_ENDPOINT ?? '/storefront/auth/me',
 } as const
