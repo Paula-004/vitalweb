@@ -1,16 +1,18 @@
 "use client";
 import {
   CalendarDaysIcon,
-  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import { useCart } from "@/contexts/CartContext";
+import { useNotification } from "@/contexts/NotificationContext";
 
 const plans = [
   {
     name: "General",
+    productId: "prod-pollo-portuguesa",
     price: 8500,
     tone: "bg-[#f0e4d5]",
     description: "Una opción equilibrada, casera y abundante.",
@@ -22,6 +24,7 @@ const plans = [
   },
   {
     name: "Keto",
+    productId: "prod-bondiola-keto",
     price: 8500,
     tone: "bg-[#e5eadc]",
     description: "Menos carbohidratos, mucho sabor y saciedad.",
@@ -33,6 +36,7 @@ const plans = [
   },
   {
     name: "Veggie",
+    productId: "prod-medallones-legumbres",
     price: 8500,
     tone: "bg-[#eef0dc]",
     description: "Vegetales, legumbres y quesos en combinaciones completas.",
@@ -44,6 +48,7 @@ const plans = [
   },
   {
     name: "Proteico",
+    productId: "prod-pollo-proteico",
     price: 9500,
     tone: "bg-[#eadfd3]",
     description: "Una alternativa potente con proteína extra.",
@@ -62,6 +67,7 @@ const monthWeeks = [
   "20 al 26 de julio",
   "27 de julio al 2 de agosto",
 ];
+const weekDays = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 const extras = [
   {
@@ -95,12 +101,62 @@ const extras = [
 ];
 
 export default function MenuOptions() {
-  const [selected, setSelected] = useState("General"),
-    [confirmed, setConfirmed] = useState(false),
-    [weekIndex, setWeekIndex] = useState(2);
+  const cart = useCart();
+  const { notify } = useNotification();
+  const [weekIndex, setWeekIndex] = useState(2),
+    [dayIndex, setDayIndex] = useState(0),
+    [quantities, setQuantities] = useState<Record<string, number>>({});
   const changeWeek = (index: number) => {
     setWeekIndex(index);
-    setConfirmed(false);
+  };
+  const selectionKey = (planName: string, week = weekIndex, day = dayIndex) =>
+    `${week}-${day}-${planName}`;
+  const changeQuantity = (planName: string, amount: number) => {
+    const key = selectionKey(planName);
+    setQuantities((current) => {
+      const next = Math.max(0, (current[key] ?? 0) + amount);
+      if (!next) {
+        const nextQuantities = { ...current };
+        delete nextQuantities[key];
+        return nextQuantities;
+      }
+      return { ...current, [key]: next };
+    });
+  };
+  const selectedCount = Object.values(quantities).reduce(
+    (sum, quantity) => sum + quantity,
+    0,
+  );
+  const selectedTotal = plans.reduce(
+    (total, plan) =>
+      total +
+      Object.entries(quantities)
+        .filter(([key]) => key.endsWith(`-${plan.name}`))
+        .reduce((sum, [, quantity]) => sum + quantity * plan.price, 0),
+    0,
+  );
+  const addSelectionToCart = () => {
+    for (const plan of plans) {
+      const entries = Object.entries(quantities).filter(
+        ([key, quantity]) => key.endsWith(`-${plan.name}`) && quantity > 0,
+      );
+      const total = entries.reduce((sum, [, quantity]) => sum + quantity, 0);
+      if (!total) continue;
+      const product = cart.products.find((item) => item.id === plan.productId);
+      if (!product) continue;
+      const notes = entries
+        .map(([key, quantity]) => {
+          const [week, day] = key.split("-").map(Number);
+          return `Semana ${week + 1}, ${weekDays[day]} × ${quantity}`;
+        })
+        .join("; ");
+      cart.add(product, total, notes);
+    }
+    notify(
+      `${selectedCount} ${selectedCount === 1 ? "menú agregado" : "menús agregados"} al carrito.`,
+      "success",
+    );
+    setQuantities({});
   };
   return (
     <section id="menu" className="grain px-5 py-24 lg:px-8">
@@ -159,15 +215,25 @@ export default function MenuOptions() {
               />
             ))}
           </div>
+          <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+            {weekDays.map((day, index) => (
+              <button
+                key={day}
+                onClick={() => setDayIndex(index)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-extrabold ${dayIndex === index ? "bg-forest text-white" : "bg-cream text-forest hover:bg-forest/10"}`}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {plans.map((plan) => {
-            const active = selected === plan.name;
+            const quantity = quantities[selectionKey(plan.name)] ?? 0;
             return (
-              <button
+              <article
                 key={plan.name}
-                onClick={() => setSelected(plan.name)}
-                className={`relative overflow-hidden rounded-[1.75rem] border p-6 text-left shadow-soft transition ${active ? "border-orange ring-2 ring-orange/20" : "border-forest/10 hover:-translate-y-1"} ${plan.tone}`}
+                className={`relative overflow-hidden rounded-[1.75rem] border p-6 text-left shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-forest/10"} ${plan.tone}`}
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -178,9 +244,9 @@ export default function MenuOptions() {
                       {plan.name}
                     </h3>
                   </div>
-                  {active && (
+                  {quantity > 0 && (
                     <span className="grid h-8 w-8 place-items-center rounded-full bg-orange text-white">
-                      <CheckIcon className="h-5" />
+                      {quantity}
                     </span>
                   )}
                 </div>
@@ -205,7 +271,32 @@ export default function MenuOptions() {
                     ),
                   )}
                 </div>
-              </button>
+                <div className="mt-5 flex items-center justify-between border-t border-forest/10 pt-5">
+                  <span className="text-xs font-extrabold text-forest">
+                    Para {weekDays[dayIndex].toLowerCase()}
+                  </span>
+                  <div className="flex items-center gap-3 rounded-full bg-white/70 p-1">
+                    <button
+                      disabled={quantity === 0}
+                      onClick={() => changeQuantity(plan.name, -1)}
+                      aria-label={`Quitar menú ${plan.name}`}
+                      className="grid h-8 w-8 place-items-center rounded-full text-lg font-extrabold text-forest disabled:opacity-25"
+                    >
+                      −
+                    </button>
+                    <b className="min-w-5 text-center text-sm text-forest">
+                      {quantity}
+                    </b>
+                    <button
+                      onClick={() => changeQuantity(plan.name, 1)}
+                      aria-label={`Agregar menú ${plan.name}`}
+                      className="grid h-8 w-8 place-items-center rounded-full bg-orange text-lg font-extrabold text-white"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </article>
             );
           })}
         </div>
@@ -219,20 +310,20 @@ export default function MenuOptions() {
                 Tu elección
               </p>
               <h3 className="mt-1 text-xl font-extrabold">
-                Menú {selected} · Semana {weekIndex + 1}
+                {selectedCount} {selectedCount === 1 ? "menú" : "menús"} · $
+                {selectedTotal.toLocaleString("es-AR")}
               </h3>
-              {confirmed && (
-                <p className="mt-1 text-xs text-cream/65">
-                  Selección demo guardada.
-                </p>
-              )}
+              <p className="mt-1 text-xs text-cream/65">
+                Podés combinar días, semanas y tipos sin límite.
+              </p>
             </div>
           </div>
           <button
-            onClick={() => setConfirmed(true)}
-            className="rounded-full bg-orange px-6 py-3 text-sm font-extrabold text-white hover:bg-cream hover:text-forest"
+            disabled={!selectedCount || !cart.ready}
+            onClick={addSelectionToCart}
+            className="rounded-full bg-orange px-6 py-3 text-sm font-extrabold text-white hover:bg-cream hover:text-forest disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {confirmed ? "Menú seleccionado" : "Continuar con este menú"}
+            Agregar todo al carrito
           </button>
         </div>
         <div className="mt-14">
