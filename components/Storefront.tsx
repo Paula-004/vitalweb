@@ -6,18 +6,17 @@ import {ShoppingBagIcon,XMarkIcon,MinusIcon,PlusIcon,ArrowRightIcon,MapPinIcon,C
 import Logo from './Logo'
 import {useStorefrontData} from '@/hooks/useStorefrontData'
 import {orderService} from '@/services'
-import {Product} from '@/types/domain'
 import ProductImage from './ProductImage'
 import {useAuth} from '@/contexts/AuthContext'
 import MenuOptions from './MenuOptions'
 type Cart=Record<string,number>
 const money=(n:number)=>'$'+n.toLocaleString('es-AR')
 export default function Storefront(){
- const {data,loading,error,retry}=useStorefrontData()
+ const {data}=useStorefrontData()
  const {session}=useAuth()
- const [category,setCategory]=useState('all'),[cart,setCart]=useState<Cart>({}),[open,setOpen]=useState(false),[sent,setSent]=useState(false),[orderError,setOrderError]=useState<string|null>(null),[submitting,setSubmitting]=useState(false)
- const products=useMemo(()=>data?.products??[],[data?.products]),categories=data?.categories??[]
- const shown=useMemo(()=>category==='all'?products:products.filter(product=>product.categoryId===category),[category,products]); const count=Object.values(cart).reduce((a,b)=>a+b,0); const total=products.reduce((sum,product)=>sum+(cart[product.id]||0)*(product.promotionalPrice??product.price),0)
+ const [cart,setCart]=useState<Cart>({}),[open,setOpen]=useState(false),[sent,setSent]=useState(false),[orderError,setOrderError]=useState<string|null>(null),[submitting,setSubmitting]=useState(false)
+ const products=useMemo(()=>data?.products??[],[data?.products])
+ const count=Object.values(cart).reduce((a,b)=>a+b,0); const total=products.reduce((sum,product)=>sum+(cart[product.id]||0)*(product.promotionalPrice??product.price),0)
  const change=(id:string,d:number)=>setCart(c=>{const n=Math.max(0,(c[id]||0)+d);const next={...c,[id]:n};if(!n)delete next[id];return next})
  const confirmOrder=async()=>{setSubmitting(true);setOrderError(null);try{await orderService.create({items:Object.entries(cart).map(([productId,quantity])=>({productId,quantity})),paymentMethodId:'pay-cash',timeSlotId:data?.dailyMenu.deliveryTimeSlotId??'slot-lunch-12-14',pickup:true});setSent(true)}catch(cause){setOrderError(cause instanceof Error?cause.message:'No se pudo confirmar el pedido.')}finally{setSubmitting(false)}}
  return <main className="min-h-screen overflow-hidden">
@@ -38,5 +37,3 @@ export default function Storefront(){
   {sent&&<div className="fixed inset-0 z-[60] grid place-items-center bg-forest/60 p-5 backdrop-blur"><div className="max-w-sm rounded-[2rem] bg-cream p-8 text-center shadow-2xl"><span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-forest text-white"><CheckIcon className="h-8"/></span><h2 className="mt-5 font-display text-3xl text-forest">¡Pedido recibido!</h2><p className="mt-3 text-sm leading-6 text-ink/65">Esta es una confirmación de demostración. Tu vianda estaría lista entre las 12:00 y 14:00.</p><button onClick={()=>{setSent(false);setOpen(false);setCart({})}} className="mt-6 rounded-full bg-orange px-6 py-3 text-sm font-bold text-white">Entendido</button></div></div>}
  </main>
 }
-function MealCard({product,categoryName,qty,change}:{product:Product;categoryName:string;qty:number;change:(id:string,d:number)=>void}){return <article className="group overflow-hidden rounded-[1.75rem] bg-white shadow-soft"><div className="relative"><ProductImage src={product.imageUrl} alt={product.name} className="h-44"/>{product.badge&&<span className="absolute left-4 top-4 rounded-full bg-cream/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-forest">{product.badge}</span>}</div><div className="p-5"><p className="text-[10px] font-extrabold uppercase tracking-[.18em] text-orange">{categoryName}</p><h3 className="mt-2 text-lg font-extrabold leading-tight text-forest">{product.name}</h3><p className="mt-2 h-10 text-xs leading-5 text-ink/60">{product.shortDescription}</p><div className="mt-5 flex items-center justify-between"><b className="text-lg text-forest">{money(product.promotionalPrice??product.price)}</b>{qty===0?<button disabled={!product.available||product.stock===0} onClick={()=>change(product.id,1)} aria-label={`Agregar ${product.name}`} className="grid h-10 w-10 place-items-center rounded-full bg-orange text-white hover:rotate-90 hover:bg-forest disabled:bg-ink/30"><PlusIcon className="h-5"/></button>:<div className="flex items-center gap-3 rounded-full bg-forest px-3 py-2 text-white"><button onClick={()=>change(product.id,-1)}><MinusIcon className="h-3"/></button><b className="text-xs">{qty}</b><button onClick={()=>change(product.id,1)}><PlusIcon className="h-3"/></button></div>}</div></div></article>}
-function MenuStatus({title,description,action,onAction}:{title:string;description:string;action?:string;onAction?:()=>void}){return <div className="mt-10 rounded-[1.75rem] border border-forest/10 bg-white px-6 py-14 text-center shadow-soft"><h3 className="font-display text-2xl text-forest">{title}</h3><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-ink/60">{description}</p>{action&&onAction&&<button onClick={onAction} className="mt-5 rounded-full bg-orange px-5 py-3 text-sm font-bold text-white">{action}</button>}</div>}

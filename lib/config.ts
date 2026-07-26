@@ -12,6 +12,9 @@ export const appConfig = {
 
 // Se completan cuando el backoffice exponga sus rutas reales. No se presuponen endpoints.
 export const apiEndpoints = {
+  authLogin: process.env.NEXT_PUBLIC_API_AUTH_LOGIN_ENDPOINT,
+  authRegister: process.env.NEXT_PUBLIC_API_AUTH_REGISTER_ENDPOINT,
+  profile: process.env.NEXT_PUBLIC_API_PROFILE_ENDPOINT,
   products: process.env.NEXT_PUBLIC_API_PRODUCTS_ENDPOINT,
   categories: process.env.NEXT_PUBLIC_API_CATEGORIES_ENDPOINT,
   dailyMenu: process.env.NEXT_PUBLIC_API_DAILY_MENU_ENDPOINT,
