@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import {
   CalendarDaysIcon,
   ChevronLeftIcon,
@@ -113,15 +114,27 @@ export default function MenuOptions() {
     `${week}-${day}-${planName}`;
   const changeQuantity = (planName: string, amount: number) => {
     const key = selectionKey(planName);
-    setQuantities((current) => {
-      const next = Math.max(0, (current[key] ?? 0) + amount);
-      if (!next) {
-        const nextQuantities = { ...current };
-        delete nextQuantities[key];
-        return nextQuantities;
+    const next = Math.max(0, (quantities[key] ?? 0) + amount);
+    const nextQuantities = { ...quantities };
+    if (next) nextQuantities[key] = next;
+    else delete nextQuantities[key];
+    const plan = plans.find((item) => item.name === planName);
+    const product = cart.products.find((item) => item.id === plan?.productId);
+    if (!product || !cart.ready) return;
+    const notes = getPlanNotes(nextQuantities, planName);
+    if (amount > 0) {
+      cart.add(product, 1, notes);
+      notify(`${planName} para ${weekDays[dayIndex]} agregado al carrito.`);
+    } else {
+      const cartItem = cart.cart.items.find(
+        (item) => item.productId === product.id,
+      );
+      if (cartItem) {
+        cart.updateQuantity(product.id, cartItem.quantity - 1);
+        if (notes) cart.setItemNotes(product.id, notes);
       }
-      return { ...current, [key]: next };
-    });
+    }
+    setQuantities(nextQuantities);
   };
   const selectedCount = Object.values(quantities).reduce(
     (sum, quantity) => sum + quantity,
@@ -135,29 +148,6 @@ export default function MenuOptions() {
         .reduce((sum, [, quantity]) => sum + quantity * plan.price, 0),
     0,
   );
-  const addSelectionToCart = () => {
-    for (const plan of plans) {
-      const entries = Object.entries(quantities).filter(
-        ([key, quantity]) => key.endsWith(`-${plan.name}`) && quantity > 0,
-      );
-      const total = entries.reduce((sum, [, quantity]) => sum + quantity, 0);
-      if (!total) continue;
-      const product = cart.products.find((item) => item.id === plan.productId);
-      if (!product) continue;
-      const notes = entries
-        .map(([key, quantity]) => {
-          const [week, day] = key.split("-").map(Number);
-          return `Semana ${week + 1}, ${weekDays[day]} × ${quantity}`;
-        })
-        .join("; ");
-      cart.add(product, total, notes);
-    }
-    notify(
-      `${selectedCount} ${selectedCount === 1 ? "menú agregado" : "menús agregados"} al carrito.`,
-      "success",
-    );
-    setQuantities({});
-  };
   return (
     <section id="menu" className="grain px-5 py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -314,17 +304,16 @@ export default function MenuOptions() {
                 {selectedTotal.toLocaleString("es-AR")}
               </h3>
               <p className="mt-1 text-xs text-cream/65">
-                Podés combinar días, semanas y tipos sin límite.
+                Cada toque en + se agrega automáticamente al carrito.
               </p>
             </div>
           </div>
-          <button
-            disabled={!selectedCount || !cart.ready}
-            onClick={addSelectionToCart}
-            className="rounded-full bg-orange px-6 py-3 text-sm font-extrabold text-white hover:bg-cream hover:text-forest disabled:cursor-not-allowed disabled:opacity-40"
+          <Link
+            href="/carrito"
+            className="rounded-full bg-orange px-6 py-3 text-sm font-extrabold text-white hover:bg-cream hover:text-forest"
           >
-            Agregar todo al carrito
-          </button>
+            Ver carrito
+          </Link>
         </div>
         <div className="mt-14">
           <h3 className="font-display text-3xl text-forest">
@@ -358,4 +347,14 @@ export default function MenuOptions() {
 function rotateExamples(examples: string[], weekIndex: number) {
   const offset = weekIndex % examples.length;
   return [...examples.slice(offset), ...examples.slice(0, offset)];
+}
+
+function getPlanNotes(quantities: Record<string, number>, planName: string) {
+  return Object.entries(quantities)
+    .filter(([key, quantity]) => key.endsWith(`-${planName}`) && quantity > 0)
+    .map(([key, quantity]) => {
+      const [week, day] = key.split("-").map(Number);
+      return `Semana ${week + 1}, ${weekDays[day]} × ${quantity}`;
+    })
+    .join("; ");
 }
