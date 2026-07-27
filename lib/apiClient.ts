@@ -9,15 +9,26 @@ export const configureApiClient=(options:{getAccessToken?:TokenProvider;onUnauth
 export function requireEndpoint(endpoint:string|undefined,resource:string){if(!endpoint)throw new DataSourceError(`Falta configurar el endpoint real para ${resource}.`);return endpoint}
 export interface ApiRequestOptions extends RequestInit{timeoutMs?:number;retries?:number;retryDelayMs?:number}
 
+// Apuntar NEXT_PUBLIC_API_URL al propio sitio hace que toda ruta del backoffice responda 404,
+// porque las atiende Next y no existen. Es un error de configuración difícil de leer desde el 404.
+let warnedSelfReference=false
+function warnIfSelfReferencing(){
+ if(warnedSelfReference||typeof window==='undefined')return
+ if(appConfig.apiUrl!==window.location.origin)return
+ warnedSelfReference=true
+ console.warn(`NEXT_PUBLIC_API_URL apunta a ${appConfig.apiUrl}, que es esta misma aplicación. Configurá la URL del backoffice: mientras tanto todas las llamadas van a responder 404.`)
+}
+
 export async function apiRequest<T>(endpoint:string,options:ApiRequestOptions={}):Promise<ApiResponse<T>>{
  if(!appConfig.apiUrl)throw new DataSourceError('NEXT_PUBLIC_API_URL no está configurada.')
+ warnIfSelfReferencing()
  const{timeoutMs=appConfig.apiTimeoutMs,retries=appConfig.apiRetries,retryDelayMs=400,...init}=options
  for(let attempt=0;attempt<=retries;attempt++){
   const timeoutController=new AbortController(),timeout=setTimeout(()=>timeoutController.abort('timeout'),timeoutMs),signal=combineSignals(init.signal,timeoutController.signal)
   try{
    const token=await tokenProvider(),response=await fetch(`${appConfig.apiUrl}${endpoint}`,{...init,signal,headers:{Accept:'application/json','Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{ }),...init.headers}})
    if(response.status===401){await unauthorizedHandler();throw new DataSourceError('Tu sesión venció. Volvé a iniciar sesión.',401)}
-   if(!response.ok){const payload=await safeJson(response);const message=typeof payload==='object'&&payload&&'message'in payload?String(payload.message):`La API respondió con estado ${response.status}.`;throw new DataSourceError(message,response.status,payload)}
+   if(!response.ok){const payload=await safeJson(response);const message=typeof payload==='object'&&payload&&'message'in payload?String(payload.message):`La API respondió ${response.status} en ${endpoint}.`;throw new DataSourceError(message,response.status,payload)}
    return normalizeResponse<T>(await safeJson(response))
   }catch(error){const normalized=normalizeError(error);if(attempt<retries&&isRetryable(normalized)){await delay(retryDelayMs*2**attempt);continue}throw normalized}finally{clearTimeout(timeout)}
  }

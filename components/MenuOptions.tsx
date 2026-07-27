@@ -6,151 +6,108 @@ import {
   ChevronRightIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useNotification } from "@/contexts/NotificationContext";
+import { useMonthlyMenu } from "@/hooks/useMonthlyMenu";
+import { recommendationService } from "@/services";
+import { Product } from "@/types/domain";
+import ProductImage from "./ProductImage";
 
-const plans = [
-  {
-    name: "General",
-    productId: "prod-pollo-portuguesa",
-    price: 8500,
-    tone: "bg-[#f0e4d5]",
-    description: "Una opción equilibrada, casera y abundante.",
-    examples: [
-      "Guisito de lentejas, carnes y verduras con queso sardo",
-      "Pollo al verdeo con calabaza y arroz",
-      "Tarta caprese con ensalada fresca",
-    ],
-  },
-  {
-    name: "Keto",
-    productId: "prod-bondiola-keto",
-    price: 8500,
-    tone: "bg-[#e5eadc]",
-    description: "Menos carbohidratos, mucho sabor y saciedad.",
-    examples: [
-      "Cubos de pollo con salsa de verdeo y calabaza gratinada",
-      "Pollo, brócoli, jamón y queso",
-      "Ensalada César sin croutones",
-    ],
-  },
-  {
-    name: "Veggie",
-    productId: "prod-medallones-legumbres",
-    price: 8500,
-    tone: "bg-[#eef0dc]",
-    description: "Vegetales, legumbres y quesos en combinaciones completas.",
-    examples: [
-      "Guisito de lentejas y verduras con queso sardo",
-      "Ravioles de verdura con salsa boloñesa veggie",
-      "Tarta de acelga, calabaza, choclo y queso",
-    ],
-  },
-  {
-    name: "Proteico",
-    productId: "prod-pollo-proteico",
-    price: 9500,
-    tone: "bg-[#eadfd3]",
-    description: "Una alternativa potente con proteína extra.",
-    examples: [
-      "Guisito de lentejas, carnes, verduras y huevo",
-      "Pollo al verdeo con huevo y vegetales",
-      "Ensalada de pollo, huevo, palta y parmesano",
-    ],
-  },
-];
-
-const monthWeeks = [
-  "29 de junio al 5 de julio",
-  "6 al 12 de julio",
-  "13 al 19 de julio",
-  "20 al 26 de julio",
-  "27 de julio al 2 de agosto",
-];
-const weekDays = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-
-const extras = [
-  {
-    title: "Ensaladas",
-    items: [
-      "Pasta corta, pollo, rúcula y parmesano",
-      "Quinoa, lentejas, pollo, huevo y vegetales",
-      "César con pollo y huevo",
-    ],
-  },
-  {
-    title: "Pastas",
-    items: [
-      "Ravioles de verdura",
-      "Sorrentinos de jamón y queso",
-      "Tallarines con salsa boloñesa",
-    ],
-  },
-  {
-    title: "Tartas",
-    items: ["Pollo, calabaza y roquefort", "Brócoli, jamón y queso", "Caprese"],
-  },
-  {
-    title: "Postres",
-    items: [
-      "Ensalada de frutas · $3.500",
-      "Cheesecake keto · $5.000",
-      "Chocotorta saludable · $5.000",
-    ],
-  },
-];
+const money = (value: number) => "$" + value.toLocaleString("es-AR");
 
 export default function MenuOptions() {
   const cart = useCart();
   const { notify } = useNotification();
-  const [weekIndex, setWeekIndex] = useState(2),
-    [dayIndex, setDayIndex] = useState(0),
-    [quantities, setQuantities] = useState<Record<string, number>>({});
-  const changeWeek = (index: number) => {
-    setWeekIndex(index);
-  };
-  const selectionKey = (planName: string, week = weekIndex, day = dayIndex) =>
-    `${week}-${day}-${planName}`;
-  const changeQuantity = (planName: string, amount: number) => {
-    const key = selectionKey(planName);
-    const next = Math.max(0, (quantities[key] ?? 0) + amount);
-    const nextQuantities = { ...quantities };
-    if (next) nextQuantities[key] = next;
-    else delete nextQuantities[key];
-    const plan = plans.find((item) => item.name === planName);
-    const product = cart.products.find((item) => item.id === plan?.productId);
-    if (!product || !cart.ready) return;
-    const notes = getPlanNotes(nextQuantities, planName);
-    if (amount > 0) {
-      cart.add(product, 1, notes);
-      notify(`${planName} para ${weekDays[dayIndex]} agregado al carrito.`);
-    } else {
-      const cartItem = cart.cart.items.find(
-        (item) => item.productId === product.id,
-      );
-      if (cartItem) {
-        cart.updateQuantity(product.id, cartItem.quantity - 1);
-        if (notes) cart.setItemNotes(product.id, notes);
+  const { data: weeks, loading, error, retry } = useMonthlyMenu();
+  const [weekIndex, setWeekIndex] = useState(0);
+  const [dayIndex, setDayIndex] = useState(0);
+  // Cantidad elegida por fecha y producto: permite armar varios días en una sola pasada.
+  const [selections, setSelections] = useState<Record<string, number>>({});
+  const [extras, setExtras] = useState<Product[]>([]);
+
+  useEffect(() => {
+    recommendationService
+      .getSides()
+      .then((response) => setExtras(response.data))
+      .catch(() => setExtras([]));
+  }, []);
+
+  useEffect(() => {
+    setDayIndex(0);
+  }, [weekIndex]);
+
+  if (loading)
+    return <Frame><p className="text-sm text-ink/60">Cargando el menú...</p></Frame>;
+  if (error)
+    return (
+      <Frame>
+        <p className="text-sm text-ink/60">No pudimos cargar el menú: {error}</p>
+        <button onClick={retry} className="mt-4 rounded-full bg-orange px-5 py-3 text-sm font-extrabold text-white">
+          Reintentar
+        </button>
+      </Frame>
+    );
+  if (!weeks?.length)
+    return <Frame><p className="text-sm text-ink/60">Todavía no hay menús publicados. Volvé a mirar en un rato.</p></Frame>;
+
+  const week = weeks[Math.min(weekIndex, weeks.length - 1)];
+  const day = week.days[Math.min(dayIndex, week.days.length - 1)];
+  const monthLabel = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric", timeZone: "UTC" })
+    .format(new Date(`${week.start}T00:00:00Z`))
+    .replace(/^\w/, (letter) => letter.toUpperCase());
+
+  const keyOf = (date: string, productId: string) => `${date}|${productId}`;
+
+  /** Nota con todas las fechas elegidas para ese producto, para que el pedido las conserve. */
+  const notesFor = (productId: string, source: Record<string, number>) =>
+    Object.entries(source)
+      .filter(([key, quantity]) => key.endsWith(`|${productId}`) && quantity > 0)
+      .map(([key, quantity]) => {
+        const date = key.split("|")[0];
+        const label = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "numeric", timeZone: "UTC" })
+          .format(new Date(`${date}T00:00:00Z`));
+        return `${label} × ${quantity}`;
+      })
+      .join("; ");
+
+  const changeQuantity = (product: Product, amount: number) => {
+    if (!cart.ready) return;
+    const key = keyOf(day.date, product.id);
+    const next = Math.max(0, (selections[key] ?? 0) + amount);
+    const nextSelections = { ...selections };
+    if (next) nextSelections[key] = next;
+    else delete nextSelections[key];
+
+    const notes = notesFor(product.id, nextSelections);
+    try {
+      if (amount > 0) {
+        cart.add(product, 1, notes);
+        notify(`${product.name} para ${day.label.toLowerCase()} agregado al carrito.`);
+      } else {
+        const cartItem = cart.cart.items.find((item) => item.productId === product.id);
+        if (cartItem) {
+          cart.updateQuantity(product.id, cartItem.quantity - 1);
+          if (notes) cart.setItemNotes(product.id, notes);
+        }
       }
+      setSelections(nextSelections);
+    } catch (cause) {
+      notify(cause instanceof Error ? cause.message : "No se pudo actualizar el carrito.", "error");
     }
-    setQuantities(nextQuantities);
   };
+
   return (
     <section id="menu" className="grain px-5 py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="max-w-3xl">
-          <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">
-            Menús Vital
-          </p>
-          <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">
-            Elegí tu menú del mes
-          </h2>
+          <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
+          <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">Elegí tu menú del mes</h2>
           <p className="mt-4 text-sm leading-6 text-ink/65">
-            Seleccioná una semana y el estilo que mejor te acompañe. Avanzá para
-            conocer las propuestas de todo el mes.
+            Seleccioná una semana y el día que quieras resolver. Avanzá para conocer las propuestas publicadas.
           </p>
         </div>
+
         <div className="mt-8 rounded-[1.75rem] bg-white p-5 shadow-soft sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -158,117 +115,116 @@ export default function MenuOptions() {
                 <CalendarDaysIcon className="h-6" />
               </span>
               <div>
-                <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">
-                  Julio 2026
-                </p>
+                <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">{monthLabel}</p>
                 <h3 className="mt-1 font-display text-2xl font-semibold text-forest">
-                  Semana {weekIndex + 1} · {monthWeeks[weekIndex]}
+                  Semana {weekIndex + 1} · {week.label}
                 </h3>
               </div>
             </div>
             <div className="flex gap-2">
               <button
                 disabled={weekIndex === 0}
-                onClick={() => changeWeek(weekIndex - 1)}
+                onClick={() => setWeekIndex(weekIndex - 1)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-full border border-forest/10 px-4 py-3 text-sm font-extrabold text-forest disabled:cursor-not-allowed disabled:opacity-35 sm:flex-none"
               >
                 <ChevronLeftIcon className="h-4" /> Anterior
               </button>
               <button
-                disabled={weekIndex === monthWeeks.length - 1}
-                onClick={() => changeWeek(weekIndex + 1)}
+                disabled={weekIndex >= weeks.length - 1}
+                onClick={() => setWeekIndex(weekIndex + 1)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-full bg-orange px-5 py-3 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-35 sm:flex-none"
               >
                 Siguiente <ChevronRightIcon className="h-4" />
               </button>
             </div>
           </div>
-          <div className="mt-5 grid grid-cols-5 gap-2">
-            {monthWeeks.map((week, index) => (
+
+          <div className="mt-5 flex gap-2">
+            {weeks.map((item, index) => (
               <button
-                key={week}
-                onClick={() => changeWeek(index)}
-                aria-label={`Ver semana ${index + 1}`}
-                className={`h-2 rounded-full transition ${index === weekIndex ? "bg-orange" : "bg-forest/10 hover:bg-forest/25"}`}
+                key={item.start}
+                onClick={() => setWeekIndex(index)}
+                aria-label={`Ver semana del ${item.label}`}
+                className={`h-2 flex-1 rounded-full transition ${index === weekIndex ? "bg-orange" : "bg-forest/10 hover:bg-forest/25"}`}
               />
             ))}
           </div>
+
           <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
-            {weekDays.map((day, index) => (
+            {week.days.map((item, index) => (
               <button
-                key={day}
+                key={item.date}
                 onClick={() => setDayIndex(index)}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-extrabold ${dayIndex === index ? "bg-forest text-white" : "bg-cream text-forest hover:bg-forest/10"}`}
               >
-                {day}
+                {item.label}
               </button>
             ))}
           </div>
         </div>
+
+        {!day.products.length && (
+          <p className="mt-10 rounded-2xl bg-white p-6 text-sm text-ink/60 shadow-soft">
+            No hay platos publicados para {day.label.toLowerCase()}.
+          </p>
+        )}
+
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {plans.map((plan) => {
-            const quantity = quantities[selectionKey(plan.name)] ?? 0;
+          {day.products.map((product) => {
+            const quantity = selections[keyOf(day.date, product.id)] ?? 0;
+            const price = product.promotionalPrice ?? product.price;
+            const soldOut = !product.available || product.stock < 1;
             return (
               <article
-                key={plan.name}
-                className={`relative overflow-hidden rounded-[1.75rem] border p-6 text-left shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-forest/10"} ${plan.tone}`}
+                key={product.id}
+                className={`relative overflow-hidden rounded-[1.75rem] border bg-white p-6 text-left shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-forest/10"}`}
               >
+                <ProductImage src={product.imageUrl} alt={product.name} className="mb-4 h-32 w-full rounded-2xl" sizes="(max-width: 768px) 100vw, 25vw" />
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">
-                      Menú
-                    </p>
-                    <h3 className="mt-2 text-2xl font-extrabold uppercase text-forest">
-                      {plan.name}
-                    </h3>
+                    <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">Menú</p>
+                    <h3 className="mt-2 text-xl font-extrabold uppercase text-forest">{product.name}</h3>
                   </div>
                   {quantity > 0 && (
-                    <span className="grid h-8 w-8 place-items-center rounded-full bg-orange text-white">
-                      {quantity}
-                    </span>
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-orange text-white">{quantity}</span>
                   )}
                 </div>
                 <p className="mt-2 text-xl font-extrabold text-orange">
-                  ${plan.price.toLocaleString("es-AR")}
-                </p>
-                <p className="mt-4 min-h-10 text-xs leading-5 text-ink/65">
-                  {plan.description}
-                </p>
-                <div className="mt-5 space-y-3 border-t border-forest/10 pt-5">
-                  {rotateExamples(plan.examples, weekIndex).map(
-                    (example, index) => (
-                      <p
-                        key={example}
-                        className="flex gap-2 text-xs leading-5 text-forest"
-                      >
-                        <b className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-forest text-[9px] text-white">
-                          {index + 1}
-                        </b>
-                        {example}
-                      </p>
-                    ),
+                  {money(price)}
+                  {product.promotionalPrice !== undefined && (
+                    <span className="ml-2 text-xs font-bold text-ink/40 line-through">{money(product.price)}</span>
                   )}
-                </div>
+                </p>
+                <p className="mt-4 min-h-10 text-xs leading-5 text-ink/65">{product.shortDescription}</p>
+                {product.ingredients.length > 0 && (
+                  <div className="mt-5 space-y-3 border-t border-forest/10 pt-5">
+                    {product.ingredients.slice(0, 3).map((ingredient, index) => (
+                      <p key={ingredient} className="flex gap-2 text-xs leading-5 text-forest">
+                        <b className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-forest text-[9px] text-white">{index + 1}</b>
+                        {ingredient}
+                      </p>
+                    ))}
+                  </div>
+                )}
                 <div className="mt-5 flex items-center justify-between border-t border-forest/10 pt-5">
                   <span className="text-xs font-extrabold text-forest">
-                    Para {weekDays[dayIndex].toLowerCase()}
+                    {soldOut ? "Agotado" : `Para ${day.label.toLowerCase()}`}
                   </span>
-                  <div className="flex items-center gap-3 rounded-full bg-white/70 p-1">
+                  <div className="flex items-center gap-3 rounded-full bg-cream/70 p-1">
                     <button
                       disabled={quantity === 0}
-                      onClick={() => changeQuantity(plan.name, -1)}
-                      aria-label={`Quitar menú ${plan.name}`}
+                      onClick={() => changeQuantity(product, -1)}
+                      aria-label={`Quitar ${product.name}`}
                       className="grid h-8 w-8 place-items-center rounded-full text-lg font-extrabold text-forest disabled:opacity-25"
                     >
                       −
                     </button>
-                    <b className="min-w-5 text-center text-sm text-forest">
-                      {quantity}
-                    </b>
+                    <b className="min-w-5 text-center text-sm text-forest">{quantity}</b>
                     <button
-                      onClick={() => changeQuantity(plan.name, 1)}
-                      aria-label={`Agregar menú ${plan.name}`}
-                      className="grid h-8 w-8 place-items-center rounded-full bg-orange text-lg font-extrabold text-white"
+                      disabled={soldOut || quantity >= product.stock}
+                      onClick={() => changeQuantity(product, 1)}
+                      aria-label={`Agregar ${product.name}`}
+                      className="grid h-8 w-8 place-items-center rounded-full bg-orange text-lg font-extrabold text-white disabled:opacity-25"
                     >
                       +
                     </button>
@@ -278,22 +234,18 @@ export default function MenuOptions() {
             );
           })}
         </div>
+
         <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-[1.75rem] bg-forest p-6 text-cream sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
             <span className="grid h-12 w-12 place-items-center rounded-full bg-orange">
               <SparklesIcon className="h-6" />
             </span>
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-orange">
-                Tu elección
-              </p>
+              <p className="text-xs font-bold uppercase tracking-widest text-orange">Tu elección</p>
               <h3 className="mt-1 text-xl font-extrabold">
-                {cart.count} {cart.count === 1 ? "menú" : "menús"} · $
-                {cart.subtotal.toLocaleString("es-AR")}
+                {cart.count} {cart.count === 1 ? "menú" : "menús"} · {money(cart.subtotal)}
               </h3>
-              <p className="mt-1 text-xs text-cream/65">
-                Cada toque en + se agrega automáticamente al carrito.
-              </p>
+              <p className="mt-1 text-xs text-cream/65">Cada toque en + se agrega automáticamente al carrito.</p>
             </div>
           </div>
           <Link
@@ -303,46 +255,37 @@ export default function MenuOptions() {
             Ver carrito{cart.count > 0 ? ` (${cart.count})` : ""}
           </Link>
         </div>
-        <div className="mt-14">
-          <h3 className="font-display text-3xl text-forest">
-            También podés sumar
-          </h3>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {extras.map((extra) => (
-              <article
-                key={extra.title}
-                className="rounded-2xl bg-white p-5 shadow-soft"
-              >
-                <h4 className="text-lg font-extrabold uppercase text-forest">
-                  {extra.title}
-                </h4>
-                <ul className="mt-4 space-y-3 text-xs leading-5 text-ink/65">
-                  {extra.items.map((item) => (
-                    <li key={item} className="border-l-2 border-orange pl-3">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+
+        {extras.length > 0 && (
+          <div className="mt-14">
+            <h3 className="font-display text-3xl text-forest">También podés sumar</h3>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {extras.map((product) => (
+                <article key={product.id} className="rounded-2xl bg-white p-5 shadow-soft">
+                  <h4 className="text-lg font-extrabold uppercase text-forest">{product.name}</h4>
+                  <p className="mt-2 text-sm font-extrabold text-orange">{money(product.promotionalPrice ?? product.price)}</p>
+                  <p className="mt-3 text-xs leading-5 text-ink/65">{product.shortDescription}</p>
+                  <Link href={`/producto/${product.slug}`} className="mt-4 inline-block text-xs font-extrabold text-orange">
+                    Ver detalle
+                  </Link>
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
 }
 
-function rotateExamples(examples: string[], weekIndex: number) {
-  const offset = weekIndex % examples.length;
-  return [...examples.slice(offset), ...examples.slice(0, offset)];
-}
-
-function getPlanNotes(quantities: Record<string, number>, planName: string) {
-  return Object.entries(quantities)
-    .filter(([key, quantity]) => key.endsWith(`-${planName}`) && quantity > 0)
-    .map(([key, quantity]) => {
-      const [week, day] = key.split("-").map(Number);
-      return `Semana ${week + 1}, ${weekDays[day]} × ${quantity}`;
-    })
-    .join("; ");
+function Frame({ children }: { children: React.ReactNode }) {
+  return (
+    <section id="menu" className="grain px-5 py-24 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
+        <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">Elegí tu menú del mes</h2>
+        <div className="mt-6">{children}</div>
+      </div>
+    </section>
+  );
 }

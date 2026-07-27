@@ -1,37 +1,113 @@
 import { mockUsers } from '@/mocks/commerce'
 import { apiRequest } from '@/lib/apiClient'
-import { appConfig, apiEndpoints } from '@/lib/config'
+import { apiEndpoints, useApiFor } from '@/lib/config'
 import { mockResponse } from '@/lib/mockApi'
 import { DataSourceError } from '@/types/api'
-import { AuthSession, LoginInput, RegisterInput } from '@/types/auth'
+import { backofficeAdapter } from '@/adapters/backofficeAdapter'
+import { AuthSession, LoginInput, RegisterInput, ResetPasswordInput } from '@/types/auth'
 
-const DEMO_PASSWORD='vital123'
-const SESSION_KEY='vitalweb-demo-session'
-const session=(user:typeof mockUsers[number]):AuthSession=>({user:structuredClone(user),accessToken:`mock-token-${user.id}`,expiresAt:new Date(Date.now()+8*60*60*1000).toISOString(),isMock:true})
+const DEMO_PASSWORD = 'vital123'
+const SESSION_KEY = 'vitalweb-demo-session'
+const session = (user: typeof mockUsers[number]): AuthSession => ({
+  user: structuredClone(user),
+  accessToken: `mock-token-${user.id}`,
+  expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+  isMock: true,
+})
 
-export const authService={
- loadSession():AuthSession|null{if(typeof window==='undefined')return null;try{const saved=JSON.parse(localStorage.getItem(SESSION_KEY)??'null') as AuthSession|null;if(!saved)return null;if(new Date(saved.expiresAt).getTime()<=Date.now()){localStorage.removeItem(SESSION_KEY);return null}return saved}catch{return null}},
- saveSession(value:AuthSession){if(typeof window!=='undefined')localStorage.setItem(SESSION_KEY,JSON.stringify(value))},
- clearSession(){if(typeof window!=='undefined')localStorage.removeItem(SESSION_KEY)},
- async login(input:LoginInput){
-  if(appConfig.dataSource==='api'){
-   const response=await apiRequest<AuthSession>(apiEndpoints.customerLogin,{method:'POST',body:JSON.stringify(input)})
-   return{...response,data:{...response.data,isMock:false}}
+/** Normaliza la respuesta de sesión venga como `{user,accessToken}` o con otros nombres. */
+function toSession(payload: Record<string, unknown>): AuthSession {
+  const user = (payload.user ?? payload.client ?? payload.customer ?? {}) as Record<string, unknown>
+  const expiresAt = payload.expiresAt ?? payload.expires_at
+  return {
+    user: backofficeAdapter.user(user),
+    accessToken: String(payload.accessToken ?? payload.access_token ?? payload.token ?? ''),
+    expiresAt: expiresAt ? String(expiresAt) : new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+    isMock: false,
   }
-  const user=mockUsers.find(item=>item.email.toLowerCase()===input.email.toLowerCase())
-  if(!user||input.password!==DEMO_PASSWORD)throw new DataSourceError('Correo o contraseña incorrectos.',401)
-  return mockResponse(session(user))
- },
- async register(input:RegisterInput){
-  if(appConfig.dataSource==='api'){
-   const response=await apiRequest<AuthSession>(apiEndpoints.customerRegister,{method:'POST',body:JSON.stringify({fullName:`${input.firstName} ${input.lastName}`.trim(),email:input.email,phone:input.phone,password:input.password})})
-   return{...response,data:{...response.data,isMock:false}}
-  }
-  if(mockUsers.some(user=>user.email.toLowerCase()===input.email.toLowerCase()))throw new DataSourceError('Ya existe una cuenta con ese correo.',409)
-  const user={id:`user-mock-${Date.now()}`,firstName:input.firstName,lastName:input.lastName,email:input.email,phone:input.phone,addresses:[],createdAt:new Date().toISOString()}
-  mockUsers.push(user)
-  return mockResponse(session(user))
- },
- async recoverPassword(email:string){if(appConfig.dataSource==='api')throw new DataSourceError('La recuperación de contraseña todavía no está disponible.');if(!mockUsers.some(user=>user.email.toLowerCase()===email.toLowerCase()))throw new DataSourceError('No encontramos una cuenta con ese correo.',404);return mockResponse({sent:true})},
- async logout(){this.clearSession();return mockResponse({success:true})},
+}
+
+export const authService = {
+  /** `true` mientras la autenticación sea la demostración local de `mocks/`. */
+  get isMock() { return !useApiFor(apiEndpoints.customerLogin) },
+
+  loadSession(): AuthSession | null {
+    if (typeof window === 'undefined') return null
+    try {
+      const saved = JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null') as AuthSession | null
+      if (!saved) return null
+      if (new Date(saved.expiresAt).getTime() <= Date.now()) { localStorage.removeItem(SESSION_KEY); return null }
+      return saved
+    } catch { return null }
+  },
+  saveSession(value: AuthSession) {
+    if (typeof window !== 'undefined') localStorage.setItem(SESSION_KEY, JSON.stringify(value))
+  },
+  clearSession() {
+    if (typeof window !== 'undefined') localStorage.removeItem(SESSION_KEY)
+  },
+
+  async login(input: LoginInput) {
+    if (useApiFor(apiEndpoints.customerLogin)) {
+      const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerLogin, { method: 'POST', body: JSON.stringify(input) })
+      return { ...response, data: toSession(response.data) }
+    }
+    const user = mockUsers.find(item => item.email.toLowerCase() === input.email.toLowerCase())
+    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Correo o contraseña incorrectos.', 401)
+    return mockResponse(session(user))
+  },
+
+  async register(input: RegisterInput) {
+    if (useApiFor(apiEndpoints.customerRegister)) {
+      const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerRegister, {
+        method: 'POST',
+        body: JSON.stringify({
+          fullName: `${input.firstName} ${input.lastName}`.trim(),
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          phone: input.phone,
+          password: input.password,
+        }),
+      })
+      return { ...response, data: toSession(response.data) }
+    }
+    if (mockUsers.some(user => user.email.toLowerCase() === input.email.toLowerCase())) {
+      throw new DataSourceError('Ya existe una cuenta con ese correo.', 409)
+    }
+    const user = { id: `user-mock-${Date.now()}`, firstName: input.firstName, lastName: input.lastName, email: input.email, phone: input.phone, addresses: [], createdAt: new Date().toISOString() }
+    mockUsers.push(user)
+    return mockResponse(session(user))
+  },
+
+  /**
+   * Respuesta neutra a propósito: nunca revela si el correo existe.
+   * El backoffice genera el token de un solo uso y envía el mensaje.
+   */
+  async recoverPassword(email: string) {
+    if (useApiFor(apiEndpoints.passwordRecovery)) {
+      const response = await apiRequest<{ sent?: boolean }>(apiEndpoints.passwordRecovery, { method: 'POST', body: JSON.stringify({ email }) })
+      return { ...response, data: { sent: true } }
+    }
+    return mockResponse({ sent: true })
+  },
+
+  async resetPassword(input: ResetPasswordInput) {
+    if (useApiFor(apiEndpoints.passwordReset)) {
+      const response = await apiRequest<{ success?: boolean }>(apiEndpoints.passwordReset, {
+        method: 'POST',
+        body: JSON.stringify({ token: input.token, password: input.password }),
+      })
+      return { ...response, data: { success: true } }
+    }
+    if (!input.token.trim()) throw new DataSourceError('El enlace de recuperación no es válido.', 422)
+    if (input.password.length < 8) throw new DataSourceError('La contraseña debe tener al menos 8 caracteres.', 422)
+    // Sin backend real no hay contraseña que cambiar: la demostración sólo confirma el formato.
+    return mockResponse({ success: true })
+  },
+
+  async logout() {
+    this.clearSession()
+    return mockResponse({ success: true })
+  },
 }

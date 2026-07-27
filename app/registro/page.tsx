@@ -1,2 +1,3 @@
+import { Suspense } from 'react'
 import AuthScreen from '@/components/AuthScreen'
-export default function Page(){return <AuthScreen mode="register"/>}
+export default function Page(){return <Suspense><AuthScreen mode="register"/></Suspense>}

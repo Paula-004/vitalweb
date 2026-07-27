@@ -9,8 +9,20 @@ import {
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { useCatalogData } from "@/hooks/useCatalogData";
+import { useStoreConfig } from "@/hooks/useStoreConfig";
 import { DietaryTag, Product, WeekDay } from "@/types/domain";
 import ProductImage from "./ProductImage";
+
+/** Fecha comercial `YYYY-MM-DD` en formato legible, ej. `Martes 14 de julio`. */
+function longDate(date: string) {
+  const label = new Intl.DateTimeFormat("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00Z`));
+  return label.replace(/^\w/, (letter) => letter.toUpperCase());
+}
 
 type Mode = "all" | "today" | "weekly" | "promotions";
 type Sort =
@@ -35,10 +47,12 @@ export default function CatalogBrowser({
   mode?: Mode;
   categorySlug?: string;
   title: string;
-  eyebrow: string;
-  description: string;
+  /** Si se omite, se arma con la fecha y el horario límite del menú publicado. */
+  eyebrow?: string;
+  description?: string;
 }) {
   const { data, loading, error, retry } = useCatalogData();
+  const { data: storeConfig } = useStoreConfig();
   const [search, setSearch] = useState(""),
     [category, setCategory] = useState("all"),
     [maxPrice, setMaxPrice] = useState(12000),
@@ -138,18 +152,28 @@ export default function CatalogBrowser({
         ? current.filter((item) => item !== tag)
         : [...current, tag],
     );
+  const activeMenu = data?.dailyMenus.find((menu) => menu.active);
+  const deadline = activeMenu?.orderDeadline ?? storeConfig?.orderDeadline;
+  const resolvedEyebrow =
+    eyebrow ?? (mode === "today" && activeMenu ? longDate(activeMenu.date) : "");
+  const resolvedDescription =
+    description ??
+    (mode === "today"
+      ? `Opciones cocinadas en el día.${deadline ? ` Pedí antes de las ${deadline} para recibir al mediodía.` : ""}`
+      : "");
+
   return (
     <>
       <section className="bg-forest px-5 py-16 text-cream lg:px-8">
         <div className="mx-auto max-w-7xl">
           <p className="text-xs font-extrabold uppercase tracking-[.2em] text-orange">
-            {eyebrow}
+            {resolvedEyebrow}
           </p>
           <h1 className="mt-3 max-w-3xl font-display text-4xl sm:text-6xl">
             {title}
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-cream/65">
-            {description}
+            {resolvedDescription}
           </p>
         </div>
       </section>

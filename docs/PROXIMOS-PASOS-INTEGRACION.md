@@ -21,31 +21,65 @@ NEXT_PUBLIC_DATA_SOURCE=api
 
 En el entorno local quedó seleccionado `api`.
 
-### Funciones conectadas
+### Resolución por capacidad, no global
+
+`NEXT_PUBLIC_DATA_SOURCE=api` ya no obliga a que todo exista en el backoffice. Cada
+servicio consulta `useApiFor(endpoint)` en `lib/config.ts`: usa la API sólo si esa ruta
+está configurada y, si no lo está, responde con el mock correspondiente en lugar de
+romper la pantalla.
+
+Consecuencia práctica: **el lado del frontend de cada prioridad de este documento ya está
+implementado**. Para activar una capacidad alcanza con publicar la ruta en el backoffice
+y completar su variable en `.env.local`; no hace falta tocar componentes ni páginas.
+
+### Implementado del lado de `vitalweb`
 
 - Registro de clientes.
 - Inicio de sesión con email y contraseña.
 - Persistencia de la sesión en el navegador.
 - Envío del bearer token en las solicitudes autenticadas.
 - Consulta y actualización básica del perfil.
-- Consulta de productos generados desde las opciones del menú.
-- Consulta de categorías.
-- Consulta de menús diarios.
-- Consulta del menú semanal.
-- Separación de permisos entre clientes y usuarios del backoffice.
+- Consulta de productos, categorías, menús diarios y menú semanal.
 
-### Endpoints disponibles
+### Estado del backoffice: las rutas `/storefront/*` todavía NO existen
+
+Verificado sobre `Gestion-de-clientes/backend/src`: no hay ninguna aparición de
+`storefront` ni un `setGlobalPrefix`. Los controladores existentes son los internos del
+backoffice y están pensados para su personal:
+
+| Controlador | Observación |
+| --- | --- |
+| `@Controller('auth')` | `POST /auth/login` y `GET /auth/me` son del **personal**, no de clientes. `/auth/users` exige `AdminGuard`. No hay registro de clientes. |
+| `@Controller('menus')` | Protegido con `AuthGuard, AdminGuard`: un visitante anónimo no puede leerlo. |
+| `@Controller('categories')`, `clients`, `deliveries`, `recipes`, `stock`, … | Resto del backoffice. |
+
+Por lo tanto, **ninguna de las capacidades de arriba funciona todavía contra la API real**.
+Configurar `NEXT_PUBLIC_API_*` con rutas `/storefront/...` produce `404` en todas.
+
+Lo que falta crear en el backoffice es un módulo `storefront` público (sin `AdminGuard`)
+que exponga, como mínimo:
 
 | Método | Endpoint | Uso |
 | --- | --- | --- |
 | `POST` | `/storefront/auth/register` | Registrar un cliente. |
-| `POST` | `/storefront/auth/login` | Iniciar sesión. |
+| `POST` | `/storefront/auth/login` | Iniciar sesión como cliente. |
 | `GET` | `/storefront/auth/me` | Obtener el perfil autenticado. |
 | `PATCH` | `/storefront/auth/me` | Actualizar el perfil. |
-| `GET` | `/storefront/products` | Obtener platos publicados desde el menú. |
-| `GET` | `/storefront/categories` | Obtener categorías. |
-| `GET` | `/storefront/menus/daily` | Obtener menús diarios. Acepta `date=YYYY-MM-DD`. |
-| `GET` | `/storefront/menus/weekly` | Obtener el menú semanal. |
+| `GET` | `/storefront/products` | Platos publicados. Debe ser público. |
+| `GET` | `/storefront/categories` | Categorías. Debe ser público. |
+| `GET` | `/storefront/menus/daily` | Menús diarios. Acepta `date=YYYY-MM-DD`. |
+| `GET` | `/storefront/menus/weekly` | Menú semanal. |
+
+### Conflicto de puertos en desarrollo
+
+Ambos proyectos usan el puerto `3000` por defecto (`backend/.env` tiene `PORT=3000` y Next
+también). El que arranca segundo queda en otro puerto: el backend busca uno libre con
+`findFreePort` y escribe el elegido en `frontend/public/backend-port.json`.
+
+Apuntar `NEXT_PUBLIC_API_URL` a `http://localhost:3000` cuando ahí está corriendo Next hace
+que la web se pida los datos a sí misma y **todo responda 404**. Conviene fijar un puerto
+distinto para el backend, por ejemplo `PORT=3100`, y usar
+`NEXT_PUBLIC_API_URL=http://localhost:3100`.
 
 ## Prioridad 1: completar el catálogo
 
@@ -72,6 +106,12 @@ un producto y su publicación diaria, o si conviene separar:
 - `DailyMenu`: publicación de productos para una fecha.
 
 Separarlos evita duplicar un mismo plato cada vez que se publica en otro día.
+
+Mientras tanto, `adapters/backofficeAdapter.ts` asume valores tolerantes para los campos
+que el backoffice no envía: `active` y `available` en `true`, `featured` y `bestSeller` en
+`false`, y `stock` en `ASSUMED_STOCK`. Sin eso, un producto sin esos campos se mostraría
+como inactivo y agotado. **Ese stock asumido no es real**: hasta que el backoffice lo
+publique, la web no puede impedir que se venda más de lo que hay.
 
 ## Prioridad 2: direcciones y zonas de entrega
 
@@ -149,6 +189,13 @@ Endpoints sugeridos:
 | `GET` | `/storefront/payments/:id` |
 | `POST` | `/webhooks/payments/:provider` |
 
+Estado en la web: el flujo de checkout, confirmación y pantalla de resultado ya funciona
+completo, pero **el cobro está simulado**. `paymentService.isSimulated` es `true` mientras
+`NEXT_PUBLIC_API_PAYMENT_CREATE_ENDPOINT` esté vacío; en ese modo la UI avisa
+explícitamente que no hay cobro real y permite elegir el resultado a probar. Al completar
+esa variable, `paymentService.create` pasa a llamar al backoffice, deja de enviar el
+importe y respeta el `redirectUrl` del proveedor sin tocar componentes.
+
 Reglas importantes:
 
 - El backend calcula el importe usando el pedido guardado.
@@ -213,16 +260,39 @@ Implementar `GET /storefront/config` para reemplazar textos fijos de la web:
 - Redes sociales.
 - Banners.
 
-## Ajustes pendientes en `vitalweb`
+## Ajustes resueltos en `vitalweb`
 
-- Mostrar estados de carga y error en `Storefront.tsx`.
-- Eliminar variables sin uso que actualmente bloquean el lint del build.
-- Proteger o redirigir las páginas que requieran sesión.
-- Mostrar un mensaje claro si el backend está desconectado.
-- Evitar cargar endpoints protegidos antes de restaurar la sesión.
-- Incorporar validación de formularios.
-- Agregar pruebas para login, registro, sesión expirada y menú vacío.
-- Definir imágenes de respaldo cuando un plato no tenga `imageUrl`.
+- Estados de carga y error: `useAsyncData` los expone y `MenuOptions` los muestra con
+  botón de reintento.
+- Lint y build limpios.
+- Rutas con sesión: `useRequireSession` redirige a `/login?next=…` y vuelve al destino
+  después de ingresar.
+- Backend desconectado: `apiClient` normaliza el error y cada pantalla lo muestra; las
+  capacidades sin endpoint caen a mock en lugar de fallar.
+- No se piden endpoints protegidos antes de restaurar la sesión (`ready` en `AuthContext`).
+- Validación de formularios en login, registro, recuperación, perfil, dirección y checkout.
+- Imagen de respaldo en `ProductImage` cuando el plato no trae `imageUrl`.
+
+## Variables a completar por prioridad
+
+| Prioridad | Variable en `.env.local` |
+| --- | --- |
+| 2 | `NEXT_PUBLIC_API_ADDRESSES_ENDPOINT`, `NEXT_PUBLIC_API_SHIPPING_ZONES_ENDPOINT`, `NEXT_PUBLIC_API_SHIPPING_QUOTE_ENDPOINT`, `NEXT_PUBLIC_API_TIME_SLOTS_ENDPOINT` |
+| 3 | `NEXT_PUBLIC_API_ORDERS_ENDPOINT`, `NEXT_PUBLIC_API_MY_ORDERS_ENDPOINT` |
+| 4 | `NEXT_PUBLIC_API_PAYMENT_ENDPOINT`, `NEXT_PUBLIC_API_PAYMENT_CREATE_ENDPOINT`, `NEXT_PUBLIC_API_PAYMENT_STATUS_ENDPOINT` |
+| 5 | `NEXT_PUBLIC_API_PROMOTIONS_ENDPOINT`, `NEXT_PUBLIC_API_COUPONS_ENDPOINT` |
+| 6 | `NEXT_PUBLIC_API_FAVORITES_ENDPOINT` |
+| 7 | `NEXT_PUBLIC_API_PASSWORD_RECOVERY_ENDPOINT`, `NEXT_PUBLIC_API_PASSWORD_RESET_ENDPOINT` |
+| 8 | `NEXT_PUBLIC_API_STORE_CONFIG_ENDPOINT`, `NEXT_PUBLIC_API_RECOMMENDATIONS_ENDPOINT` |
+
+- Pruebas automatizadas con Vitest (`npm test`): login, registro, sesión expirada, menú
+  vacío, tolerancia del adaptador y validación del carrito.
+
+## Pendiente real en `vitalweb`
+
+- Cobro real: el flujo de pago funciona de punta a punta pero **simulado**. Ver Prioridad 4.
+- Las pruebas cubren servicios y adaptadores, no componentes React. Para probar pantallas
+  haría falta sumar `jsdom` y `@testing-library/react`.
 
 ## Configuración local
 

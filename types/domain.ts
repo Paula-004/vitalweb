@@ -137,14 +137,33 @@ export interface Order {
 
 export interface CreateOrderInput {
   userId?: EntityId
-  items: Array<{ productId: EntityId; quantity: number }>
+  items: Array<{ productId: EntityId; quantity: number; notes?: string }>
   paymentMethodId: EntityId
   timeSlotId: EntityId
   shippingAddress?: Address
   pickup: boolean
+  /** Fecha de entrega o retiro en formato `YYYY-MM-DD`. */
+  deliveryDate?: string
+  /** Datos de contacto cuando el pedido se hace sin cuenta. */
+  contact?: { firstName: string; lastName: string; email: string; phone: string }
   couponCode?: string
   notes?: string
   shippingCost?: number
+}
+
+export interface OrderQuery {
+  status?: OrderStatus
+  from?: string
+  to?: string
+  page?: number
+  limit?: number
+}
+
+/** Resultado de repetir un pedido: el backoffice recotiza y puede descartar productos. */
+export interface RepeatOrderResult {
+  items: Array<{ productId: EntityId; quantity: number }>
+  unavailable: Array<{ productId: EntityId; productName: string; reason: string }>
+  priceChanges: Array<{ productId: EntityId; productName: string; previousPrice: number; currentPrice: number }>
 }
 
 export interface CartItem { productId: EntityId; quantity: number; notes?: string }
@@ -176,6 +195,25 @@ export interface TimeSlot {
   active: boolean
 }
 
+export interface ShippingQuoteInput {
+  postalCode: string
+  date: string
+  items: Array<{ productId: EntityId; quantity: number }>
+  zoneId?: EntityId
+  addressId?: EntityId
+  couponCode?: string
+  pickup?: boolean
+}
+
+export interface ShippingQuote {
+  available: boolean
+  zoneId?: EntityId
+  cost: number
+  freeShipping: boolean
+  timeSlots: TimeSlot[]
+  message?: string
+}
+
 export interface Coupon {
   id: EntityId
   code: string
@@ -193,7 +231,19 @@ export interface Coupon {
 }
 
 export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'cancelled'
-export interface PaymentTransaction { id:EntityId; orderId:EntityId; methodId:EntityId; amount:number; currency:'ARS'; status:PaymentStatus; createdAt:string; isSimulation:true }
+export interface PaymentTransaction {
+  id: EntityId
+  orderId: EntityId
+  methodId: EntityId
+  amount: number
+  currency: 'ARS'
+  status: PaymentStatus
+  /** Devuelto por el proveedor cuando el pago se completa fuera del sitio. */
+  redirectUrl?: string
+  createdAt: string
+  /** `true` mientras el pago sea una demostración local sin cobro real. */
+  isSimulation: boolean
+}
 
 export interface StoreConfig {
   id: EntityId

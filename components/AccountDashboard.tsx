@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addressService, orderService, productService } from "@/services";
+import { addressService, orderService, shippingService } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useRequireSession } from "@/hooks/useRequireSession";
 import { Address, Order } from "@/types/domain";
 type Tab = "profile" | "addresses" | "orders";
 const statuses: Record<string, string> = {
@@ -18,110 +19,153 @@ const statuses: Record<string, string> = {
 };
 const money = (value: number) => "$" + value.toLocaleString("es-AR");
 export default function AccountDashboard() {
-  const { session, logout, updateProfile, setSession } = useAuth(),
+  const { logout, updateProfile, setSession } = useAuth(),
+    { session, checking } = useRequireSession(),
     cart = useCart(),
     router = useRouter();
   const [tab, setTab] = useState<Tab>("profile"),
     [orders, setOrders] = useState<Order[]>([]),
     [selected, setSelected] = useState<Order | null>(null),
     [notice, setNotice] = useState(""),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false),
     [showAddress, setShowAddress] = useState(false);
+
+  const userId = session?.user.id;
   useEffect(() => {
-    if (session)
-      orderService
-        .getByUser(session.user.id)
-        .then((response) => setOrders(response.data));
-  }, [session]);
-  if (!session)
+    if (!userId) return;
+    orderService
+      .getByUser(userId)
+      .then((response) => setOrders(response.data))
+      .catch((cause) =>
+        setError(cause instanceof Error ? cause.message : "No pudimos cargar tus pedidos."),
+      );
+  }, [userId]);
+
+  // Las direcciones viven en el backoffice: la sesión guardada puede estar desactualizada.
+  useEffect(() => {
+    if (!userId) return;
+    addressService
+      .getAll(userId)
+      .then((response) =>
+        setSession((current) =>
+          current ? { ...current, user: { ...current.user, addresses: response.data } } : current,
+        ),
+      )
+      .catch(() => undefined);
+  }, [userId, setSession]);
+
+  if (checking || !session)
     return (
       <div className="grid min-h-[65vh] place-items-center px-5 text-center">
-        <div>
-          <h1 className="font-display text-4xl text-forest">
-            Ingresá a tu cuenta
-          </h1>
-          <p className="mt-2 text-sm text-ink/60">
-            Esta sesión es sólo una demostración.
-          </p>
-          <Link
-            href="/login"
-            className="mt-5 inline-block rounded-full bg-orange px-6 py-3 text-sm font-bold text-white"
-          >
-            Ingresar
-          </Link>
-        </div>
+        <p className="text-sm text-ink/60">Verificando tu sesión...</p>
       </div>
     );
   const profile = session.user;
+  const setAddresses = (addresses: Address[]) =>
+    setSession((current) =>
+      current ? { ...current, user: { ...current.user, addresses } } : current,
+    );
+
+  const run = async (action: () => Promise<void>, success: string) => {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await action();
+      setNotice(success);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo completar la operación.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
-    await updateProfile({
-      firstName: String(values.firstName),
-      lastName: String(values.lastName),
-      phone: String(values.phone),
-    });
-    setNotice("Perfil actualizado.");
+    const firstName = String(values.firstName).trim(),
+      lastName = String(values.lastName).trim(),
+      phone = String(values.phone).trim();
+    if (!firstName || !lastName) return setError("Completá tu nombre y apellido.");
+    if (!/^[\d\s+()-]{6,}$/.test(phone)) return setError("Ingresá un teléfono válido.");
+    await run(() => updateProfile({ firstName, lastName, phone }), "Perfil actualizado.");
   };
+
   const addAddress = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget,
       values = Object.fromEntries(new FormData(form));
-    const address = (
-      await addressService.create(profile.id, {
-        label: String(values.label),
-        recipientName: String(values.recipientName),
-        street: String(values.street),
-        streetNumber: String(values.streetNumber),
-        floor: String(values.floor || ""),
-        apartment: String(values.apartment || ""),
-        city: String(values.city),
-        province: String(values.province),
-        postalCode: String(values.postalCode),
-        phone: String(values.phone),
-        deliveryNotes: String(values.deliveryNotes || ""),
-        isDefault: values.isDefault === "on",
-        shippingZoneId: "zone-caba",
-      })
-    ).data;
-    setSession((current) =>
-      current
-        ? {
-            ...current,
-            user: {
-              ...current.user,
-              addresses: [...current.user.addresses, address],
-            },
-          }
-        : current,
-    );
-    setShowAddress(false);
-    form.reset();
+    const postalCode = String(values.postalCode).trim();
+    if (!postalCode) return setError("El código postal es obligatorio.");
+
+    await run(async () => {
+      // La zona la determina el código postal, no un valor fijo del frontend.
+      const zones = (await shippingService.getZones()).data;
+      const zone = zones.find(
+        (item) =>
+          item.active &&
+          item.postalCodes.some((code) => code.toUpperCase() === postalCode.toUpperCase()),
+      );
+      const address = (
+        await addressService.create(profile.id, {
+          label: String(values.label),
+          recipientName: String(values.recipientName),
+          street: String(values.street),
+          streetNumber: String(values.streetNumber),
+          floor: String(values.floor || ""),
+          apartment: String(values.apartment || ""),
+          city: String(values.city),
+          province: String(values.province),
+          postalCode,
+          phone: String(values.phone),
+          deliveryNotes: String(values.deliveryNotes || ""),
+          isDefault: values.isDefault === "on",
+          shippingZoneId: zone?.id,
+        })
+      ).data;
+      const others = address.isDefault
+        ? profile.addresses.map((item) => ({ ...item, isDefault: false }))
+        : profile.addresses;
+      setAddresses([...others, address]);
+      setShowAddress(false);
+      form.reset();
+    }, "Dirección guardada.");
   };
-  const removeAddress = async (id: string) => {
-    await addressService.remove(profile.id, id);
-    setSession((current) =>
-      current
-        ? {
-            ...current,
-            user: {
-              ...current.user,
-              addresses: current.user.addresses.filter(
-                (item) => item.id !== id,
-              ),
-            },
-          }
-        : current,
-    );
-  };
-  const repeat = async (order: Order) => {
-    for (const detail of order.details) {
-      try {
-        const product = (await productService.getById(detail.productId)).data;
-        cart.add(product, Math.min(detail.quantity, product.stock));
-      } catch {}
-    }
-    router.push("/carrito");
-  };
+
+  const makeDefault = async (id: string) =>
+    run(async () => {
+      await addressService.setDefault(profile.id, id);
+      setAddresses(
+        profile.addresses.map((item) => ({ ...item, isDefault: item.id === id })),
+      );
+    }, "Dirección principal actualizada.");
+
+  const removeAddress = async (id: string) =>
+    run(async () => {
+      await addressService.remove(profile.id, id);
+      setAddresses(profile.addresses.filter((item) => item.id !== id));
+    }, "Dirección eliminada.");
+
+  /** Repetir recotiza contra el catálogo vigente y avisa qué cambió antes de tocar el carrito. */
+  const repeat = async (order: Order) =>
+    run(async () => {
+      const result = await orderService.repeat(order.id);
+      for (const item of result.items) {
+        const product = cart.products.find((value) => value.id === item.productId);
+        if (product) cart.add(product, item.quantity);
+      }
+      const warnings = [
+        ...result.unavailable.map((item) => `${item.productName}: ${item.reason}`),
+        ...result.priceChanges.map(
+          (item) =>
+            `${item.productName} cambió de ${money(item.previousPrice)} a ${money(item.currentPrice)}.`,
+        ),
+      ];
+      if (warnings.length) setError(warnings.join(" "));
+      if (!result.items.length) throw new Error("Ningún producto de ese pedido sigue disponible.");
+      router.push("/carrito");
+    }, "Pedido agregado con precios y disponibilidad actuales.");
   return (
     <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
@@ -163,6 +207,14 @@ export default function AccountDashboard() {
       {notice && (
         <p className="mt-5 rounded-xl bg-green-50 p-3 text-sm font-bold text-green-700">
           {notice}
+        </p>
+      )}
+      {error && (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700"
+        >
+          {error}
         </p>
       )}
       {tab === "profile" && (
@@ -223,6 +275,8 @@ export default function AccountDashboard() {
                 <AddressCard
                   key={address.id}
                   address={address}
+                  busy={busy}
+                  makeDefault={() => makeDefault(address.id)}
                   remove={() => removeAddress(address.id)}
                 />
               ))
@@ -378,9 +432,13 @@ function Field({
 }
 function AddressCard({
   address,
+  busy,
+  makeDefault,
   remove,
 }: {
   address: Address;
+  busy: boolean;
+  makeDefault: () => void;
   remove: () => void;
 }) {
   return (
@@ -400,9 +458,24 @@ function AddressCard({
       <p className="text-xs text-ink/50">
         {address.city}, {address.province} · {address.postalCode}
       </p>
-      <button onClick={remove} className="mt-4 text-xs font-bold text-red-700">
-        Eliminar
-      </button>
+      <div className="mt-4 flex gap-4">
+        {!address.isDefault && (
+          <button
+            onClick={makeDefault}
+            disabled={busy}
+            className="text-xs font-bold text-forest disabled:opacity-40"
+          >
+            Hacer principal
+          </button>
+        )}
+        <button
+          onClick={remove}
+          disabled={busy}
+          className="text-xs font-bold text-red-700 disabled:opacity-40"
+        >
+          Eliminar
+        </button>
+      </div>
     </article>
   );
 }

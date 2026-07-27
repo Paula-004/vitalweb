@@ -15,11 +15,14 @@ import Logo from "./Logo";
 import ProductImage from "./ProductImage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useStoreConfig } from "@/hooks/useStoreConfig";
 import MenuOptions from "./MenuOptions";
 const money = (n: number) => "$" + n.toLocaleString("es-AR");
 export default function Storefront() {
   const { session } = useAuth();
   const cart = useCart();
+  const { data: storeConfig } = useStoreConfig();
+  const deadline = storeConfig?.orderDeadline;
   const [open, setOpen] = useState(false);
   const count = cart.count;
   const total = cart.subtotal;
@@ -101,7 +104,8 @@ export default function Storefront() {
             </div>
             <div className="mt-10 flex flex-wrap gap-5 text-xs font-bold text-forest/70">
               <span className="flex items-center gap-2">
-                <ClockIcon className="h-4 text-orange" /> Pedí hasta las 10:30
+                <ClockIcon className="h-4 text-orange" />{" "}
+                {deadline ? `Pedí hasta las ${deadline}` : "Pedí con anticipación"}
               </span>
               <span className="flex items-center gap-2">
                 <MapPinIcon className="h-4 text-orange" /> Envíos en la zona
@@ -128,7 +132,9 @@ export default function Storefront() {
               [
                 "02",
                 "Pedí",
-                "Confirmá antes de las 10:30 y elegí entrega o retiro.",
+                deadline
+                  ? `Confirmá antes de las ${deadline} y elegí entrega o retiro.`
+                  : "Confirmá tu pedido y elegí entrega o retiro.",
               ],
               [
                 "03",

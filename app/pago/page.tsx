@@ -1,5 +1,41 @@
 import Link from 'next/link'
 import { CheckCircleIcon, ClockIcon, XCircleIcon, NoSymbolIcon } from '@heroicons/react/24/outline'
+import { paymentService } from '@/services'
 import { PaymentStatus } from '@/types/domain'
-const config:Record<PaymentStatus,{title:string;text:string;color:string;icon:typeof CheckCircleIcon}>={approved:{title:'Pago aprobado',text:'La simulación fue aprobada y el pedido quedó confirmado.',color:'bg-green-700',icon:CheckCircleIcon},pending:{title:'Pago pendiente',text:'La simulación quedó pendiente. El pedido espera confirmación.',color:'bg-amber-600',icon:ClockIcon},rejected:{title:'Pago rechazado',text:'La simulación fue rechazada. Podés intentar con otro método.',color:'bg-red-700',icon:XCircleIcon},cancelled:{title:'Pago cancelado',text:'La simulación fue cancelada y no se procesó ningún cobro.',color:'bg-ink',icon:NoSymbolIcon}}
-export default function Page({searchParams}:{searchParams:{status?:string;order?:string}}){const status=(['approved','pending','rejected','cancelled'].includes(searchParams.status??'')?searchParams.status:'cancelled') as PaymentStatus,item=config[status],Icon=item.icon;return <main className="grid min-h-screen place-items-center bg-forest px-5 py-10"><div className="w-full max-w-lg rounded-[2rem] bg-cream p-8 text-center shadow-2xl"><span className={`mx-auto grid h-16 w-16 place-items-center rounded-full text-white ${item.color}`}><Icon className="h-9 w-9"/></span><p className="mt-6 text-xs font-extrabold uppercase tracking-widest text-orange">Resultado simulado</p><h1 className="mt-2 font-display text-4xl text-forest">{item.title}</h1><p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-ink/60">{item.text}</p><p className="mt-4 rounded-xl bg-white p-3 text-xs">Pedido demo: <b>{searchParams.order??'sin número'}</b></p><div className="mt-6 rounded-xl border border-dashed border-forest/20 p-4 text-left"><p className="text-xs font-bold text-forest">Notificaciones futuras</p><p className="mt-1 text-[10px] text-ink/50">Vista previa solamente. No se enviará ningún mensaje real.</p><div className="mt-3 flex gap-2"><button disabled className="rounded-full bg-forest/10 px-3 py-2 text-[10px] font-bold">Correo</button><button disabled className="rounded-full bg-forest/10 px-3 py-2 text-[10px] font-bold">WhatsApp</button></div></div><div className="mt-7 flex flex-col gap-3 sm:flex-row">{status==='rejected'&&<Link href="/checkout" className="flex-1 rounded-full bg-orange px-5 py-3 text-sm font-bold text-white">Probar otro medio</Link>}<Link href="/mi-cuenta" className="flex-1 rounded-full bg-forest px-5 py-3 text-sm font-bold text-white">Mis pedidos</Link><Link href="/" className="flex-1 rounded-full border px-5 py-3 text-sm font-bold">Inicio</Link></div></div></main>}
+
+const config: Record<PaymentStatus, { title: string; text: string; simulatedText: string; color: string; icon: typeof CheckCircleIcon }> = {
+  approved: { title: 'Pago aprobado', text: 'El pago fue aprobado y el pedido quedó confirmado.', simulatedText: 'La simulación fue aprobada y el pedido quedó confirmado.', color: 'bg-green-700', icon: CheckCircleIcon },
+  pending: { title: 'Pago pendiente', text: 'El pago quedó pendiente. El pedido espera confirmación.', simulatedText: 'La simulación quedó pendiente. El pedido espera confirmación.', color: 'bg-amber-600', icon: ClockIcon },
+  rejected: { title: 'Pago rechazado', text: 'El pago fue rechazado. Podés intentar con otro método.', simulatedText: 'La simulación fue rechazada. Podés intentar con otro método.', color: 'bg-red-700', icon: XCircleIcon },
+  cancelled: { title: 'Pago cancelado', text: 'El pago fue cancelado y no se procesó ningún cobro.', simulatedText: 'La simulación fue cancelada y no se procesó ningún cobro.', color: 'bg-ink', icon: NoSymbolIcon },
+}
+
+export default function Page({ searchParams }: { searchParams: { status?: string; order?: string } }) {
+  const status = (['approved', 'pending', 'rejected', 'cancelled'].includes(searchParams.status ?? '') ? searchParams.status : 'cancelled') as PaymentStatus
+  const item = config[status]
+  const Icon = item.icon
+  const simulated = paymentService.isSimulated
+
+  return <main className="grid min-h-screen place-items-center bg-forest px-5 py-10">
+    <div className="w-full max-w-lg rounded-[2rem] bg-cream p-8 text-center shadow-2xl">
+      <span className={`mx-auto grid h-16 w-16 place-items-center rounded-full text-white ${item.color}`}><Icon className="h-9 w-9" /></span>
+      {simulated && <p className="mt-6 text-xs font-extrabold uppercase tracking-widest text-orange">Resultado simulado</p>}
+      <h1 className="mt-2 font-display text-4xl text-forest">{item.title}</h1>
+      <p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-ink/60">{simulated ? item.simulatedText : item.text}</p>
+      <p className="mt-4 rounded-xl bg-white p-3 text-xs">Pedido: <b>{searchParams.order ?? 'sin número'}</b></p>
+      {simulated && <div className="mt-6 rounded-xl border border-dashed border-forest/20 p-4 text-left">
+        <p className="text-xs font-bold text-forest">Cobro real no conectado</p>
+        <p className="mt-1 text-[10px] text-ink/50">Ninguna respuesta de esta pantalla acredita un pago verdadero. Las notificaciones son una vista previa.</p>
+        <div className="mt-3 flex gap-2">
+          <button disabled className="rounded-full bg-forest/10 px-3 py-2 text-[10px] font-bold">Correo</button>
+          <button disabled className="rounded-full bg-forest/10 px-3 py-2 text-[10px] font-bold">WhatsApp</button>
+        </div>
+      </div>}
+      <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+        {status === 'rejected' && <Link href="/checkout" className="flex-1 rounded-full bg-orange px-5 py-3 text-sm font-bold text-white">Probar otro medio</Link>}
+        <Link href="/mi-cuenta" className="flex-1 rounded-full bg-forest px-5 py-3 text-sm font-bold text-white">Mis pedidos</Link>
+        <Link href="/" className="flex-1 rounded-full border px-5 py-3 text-sm font-bold">Inicio</Link>
+      </div>
+    </div>
+  </main>
+}
