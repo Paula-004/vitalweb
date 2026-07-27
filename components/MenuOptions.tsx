@@ -136,18 +136,6 @@ export default function MenuOptions() {
     }
     setQuantities(nextQuantities);
   };
-  const selectedCount = Object.values(quantities).reduce(
-    (sum, quantity) => sum + quantity,
-    0,
-  );
-  const selectedTotal = plans.reduce(
-    (total, plan) =>
-      total +
-      Object.entries(quantities)
-        .filter(([key]) => key.endsWith(`-${plan.name}`))
-        .reduce((sum, [, quantity]) => sum + quantity * plan.price, 0),
-    0,
-  );
   return (
     <section id="menu" className="grain px-5 py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -300,8 +288,8 @@ export default function MenuOptions() {
                 Tu elección
               </p>
               <h3 className="mt-1 text-xl font-extrabold">
-                {selectedCount} {selectedCount === 1 ? "menú" : "menús"} · $
-                {selectedTotal.toLocaleString("es-AR")}
+                {cart.count} {cart.count === 1 ? "menú" : "menús"} · $
+                {cart.subtotal.toLocaleString("es-AR")}
               </h3>
               <p className="mt-1 text-xs text-cream/65">
                 Cada toque en + se agrega automáticamente al carrito.
@@ -312,7 +300,7 @@ export default function MenuOptions() {
             href="/carrito"
             className="rounded-full bg-orange px-6 py-3 text-sm font-extrabold text-white hover:bg-cream hover:text-forest"
           >
-            Ver carrito
+            Ver carrito{cart.count > 0 ? ` (${cart.count})` : ""}
           </Link>
         </div>
         <div className="mt-14">
