@@ -189,12 +189,14 @@ export default function MenuOptions() {
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-orange text-white">{quantity}</span>
                   )}
                 </div>
-                <p className="mt-2 text-xl font-extrabold text-orange">
-                  {money(price)}
-                  {product.promotionalPrice !== undefined && (
-                    <span className="ml-2 text-xs font-bold text-ink/40 line-through">{money(product.price)}</span>
-                  )}
-                </p>
+                {price > 0 && (
+                  <p className="mt-2 text-xl font-extrabold text-orange">
+                    {money(price)}
+                    {product.promotionalPrice !== undefined && product.price > 0 && (
+                      <span className="ml-2 text-xs font-bold text-ink/40 line-through">{money(product.price)}</span>
+                    )}
+                  </p>
+                )}
                 <p className="mt-4 min-h-10 text-xs leading-5 text-ink/65">{product.shortDescription}</p>
                 {product.ingredients.length > 0 && (
                   <div className="mt-5 space-y-3 border-t border-forest/10 pt-5">
