@@ -37,6 +37,15 @@ export default function MenuOptions() {
     setDayIndex(0);
   }, [weekIndex]);
 
+  useEffect(() => {
+    if (!weeks?.length) return;
+    const today = currentDayKey();
+    const currentWeek = weeks.findIndex(
+      (item) => today >= item.start && today <= addCalendarDays(item.start, 6),
+    );
+    setWeekIndex(currentWeek >= 0 ? currentWeek : 0);
+  }, [weeks]);
+
   if (loading)
     return <Frame><p className="text-sm text-ink/60">Cargando el menú...</p></Frame>;
   if (error)
@@ -139,14 +148,25 @@ export default function MenuOptions() {
             </div>
           </div>
 
-          <div className="mt-5 flex gap-2">
+          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {weeks.map((item, index) => (
               <button
                 key={item.start}
                 onClick={() => setWeekIndex(index)}
                 aria-label={`Ver semana del ${item.label}`}
-                className={`h-2 flex-1 rounded-full transition ${index === weekIndex ? "bg-orange" : "bg-forest/10 hover:bg-forest/25"}`}
-              />
+                className={`rounded-2xl border px-4 py-3 text-left transition ${
+                  index === weekIndex
+                    ? "border-orange bg-orange text-white"
+                    : "border-forest/10 bg-cream text-forest hover:border-orange/40"
+                }`}
+              >
+                <span className="block text-xs font-extrabold">
+                  {isCurrentWeek(item.start) ? "Semana actual" : `Semana ${index + 1}`}
+                </span>
+                <span className={`mt-1 block text-xs ${index === weekIndex ? "text-white/75" : "text-ink/55"}`}>
+                  {item.label}
+                </span>
+              </button>
             ))}
           </div>
 
@@ -278,6 +298,29 @@ export default function MenuOptions() {
       </div>
     </section>
   );
+}
+
+function currentDayKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).formatToParts(new Date());
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+function addCalendarDays(date: string, amount: number) {
+  const value = new Date(`${date}T00:00:00.000Z`);
+  value.setUTCDate(value.getUTCDate() + amount);
+  return value.toISOString().slice(0, 10);
+}
+
+function isCurrentWeek(start: string) {
+  const today = currentDayKey();
+  return today >= start && today <= addCalendarDays(start, 6);
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
