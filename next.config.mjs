@@ -31,5 +31,15 @@ function imageHosts() {
 }
 
 /** @type {import('next').NextConfig} */
-const nextConfig = { images: { remotePatterns: imageHosts() } };
+const nextConfig = {
+  images: { remotePatterns: imageHosts() },
+  async rewrites() {
+    return [
+      {
+        source: '/api/backend/:path*',
+        destination: 'https://vitalfood-backend.onrender.com/:path*',
+      },
+    ];
+  },
+};
 export default nextConfig;
