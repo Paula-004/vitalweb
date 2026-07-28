@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildWeeks } from '@/hooks/useMonthlyMenu'
+import { buildWeeks, fillCalendarWeeks } from '@/hooks/useMonthlyMenu'
 import { menuService } from '@/services'
 import { NotFoundError } from '@/types/api'
 import { DailyMenu, Product } from '@/types/domain'
@@ -70,5 +70,20 @@ describe('armado del calendario', () => {
   it('etiqueta el día con su nombre en español', () => {
     const weeks = buildWeeks([menu('2026-07-14', ['prod-1'])], [product('prod-1')])
     expect(weeks[0].days[0].label).toMatch(/^Martes 14$/)
+  })
+
+  it('completa semanas consecutivas y conserva los platos publicados', () => {
+    const published = buildWeeks([menu('2026-08-17', ['prod-1'])], [product('prod-1')])
+    const weeks = fillCalendarWeeks(published, '2026-07-28')
+
+    expect(weeks.map(week => week.start)).toEqual([
+      '2026-07-27',
+      '2026-08-03',
+      '2026-08-10',
+      '2026-08-17',
+      '2026-08-24',
+    ])
+    expect(weeks[3].label).toBe('17 al 23 de agosto')
+    expect(weeks[3].days[0].products.map(item => item.id)).toEqual(['prod-1'])
   })
 })

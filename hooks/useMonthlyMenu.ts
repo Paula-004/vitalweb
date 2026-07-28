@@ -9,7 +9,7 @@ export interface MenuDay {
   date: string
   /** Etiqueta corta para la pestaña del día, ej. `Martes 14`. */
   label: string
-  menu: DailyMenu
+  menu?: DailyMenu
   products: Product[]
 }
 export interface MenuWeek {
@@ -63,15 +63,65 @@ export function buildWeeks(menus: DailyMenu[], products: Product[]): MenuWeek[] 
   return Array.from(byWeek.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([start, days]) => {
-      const end = days[days.length - 1].date
+      const end = addDays(start, 6)
       return { start, end, label: weekLabel(start, end), days }
     })
+}
+
+/**
+ * Completa el horizonte comercial con semanas calendario consecutivas.
+ * Así la navegación avanza siempre de a siete días, incluso si una semana
+ * todavía no tiene platos publicados.
+ */
+export function fillCalendarWeeks(
+  publishedWeeks: MenuWeek[],
+  referenceDate: string,
+  count = 5,
+): MenuWeek[] {
+  const publishedByStart = new Map(publishedWeeks.map(week => [week.start, week]))
+  const firstMonday = startOfWeek(referenceDate)
+  return Array.from({ length: count }, (_, weekIndex) => {
+    const start = addDays(firstMonday, weekIndex * 7)
+    const end = addDays(start, 6)
+    const publishedDays = new Map(
+      (publishedByStart.get(start)?.days ?? []).map(day => [day.date, day]),
+    )
+    const days = Array.from({ length: 5 }, (_, dayIndex) => {
+      const date = addDays(start, dayIndex)
+      return publishedDays.get(date) ?? {
+        date,
+        label: format(date, { weekday: 'long', day: 'numeric' })
+          .replace(/^\w/, letter => letter.toUpperCase()),
+        products: [],
+      }
+    })
+    return { start, end, label: weekLabel(start, end), days }
+  })
+}
+
+function addDays(date: string, amount: number) {
+  const value = toUtcDate(date)
+  value.setUTCDate(value.getUTCDate() + amount)
+  return toIso(value)
+}
+
+function currentDayKey() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  }).formatToParts(new Date())
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find(part => part.type === type)?.value ?? ''
+  return `${value('year')}-${value('month')}-${value('day')}`
 }
 
 export function useMonthlyMenu() {
   const loader = useCallback(async (): Promise<ApiResponse<MenuWeek[]>> => {
     const [products, menus] = await Promise.all([productService.getAll(), menuService.getDailyMenus()])
-    return { data: buildWeeks(menus.data, products.data), meta: products.meta }
+    const publishedWeeks = buildWeeks(menus.data, products.data)
+    return { data: fillCalendarWeeks(publishedWeeks, currentDayKey()), meta: products.meta }
   }, [])
   return useAsyncData(loader, [loader])
 }
