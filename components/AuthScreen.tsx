@@ -36,6 +36,8 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
 
   const next = searchParams.get('next') || '/mi-cuenta'
   const token = searchParams.get('token') ?? ''
+  // Link de referido del vendedor: /registro?v=LUCI-CENTRO deja el código cargado.
+  const sellerCode = (searchParams.get('v') ?? '').toUpperCase()
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -51,7 +53,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     try {
       if (mode === 'login') { await auth.login({ email: values.email, password: values.password }); router.push(next) }
       if (mode === 'register') {
-        await auth.register({ firstName: values.firstName, lastName: values.lastName, email: values.email, phone: values.phone, password: values.password })
+        await auth.register({ firstName: values.firstName, lastName: values.lastName, email: values.email, phone: values.phone, password: values.password, sellerCode: values.sellerCode })
         router.push(next)
       }
       if (mode === 'recover') {
@@ -97,10 +99,20 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
         <Field name="firstName" label="Nombre" autoComplete="given-name" />
         <Field name="lastName" label="Apellido" autoComplete="family-name" />
       </div>}
-      {mode !== 'reset' && <Field name="email" label="Correo" type="email" autoComplete="email" defaultValue={mode === 'login' ? 'marina@vital.demo' : ''} />}
+      {mode !== 'reset' && <Field name="email" label="Correo" type="email" autoComplete="email" defaultValue={mode === 'login' && authService.isMock ? 'marina@vital.demo' : ''} />}
       {mode === 'register' && <Field name="phone" label="Teléfono" autoComplete="tel" />}
-      {mode !== 'recover' && <Field name="password" label="Contraseña" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} defaultValue={mode === 'login' ? 'vital123' : ''} />}
+      {mode !== 'recover' && <Field name="password" label="Contraseña" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} defaultValue={mode === 'login' && authService.isMock ? 'vital123' : ''} />}
       {(mode === 'register' || mode === 'reset') && <Field name="passwordConfirm" label="Repetir contraseña" type="password" autoComplete="new-password" />}
+      {/* Quien llega por el link de un vendedor ya lo trae cargado; el resto lo
+          escribe o lo deja vacío (compra directa). */}
+      {mode === 'register' && <Field
+        name="sellerCode"
+        label="Código de vendedor (opcional)"
+        optional
+        defaultValue={sellerCode}
+        autoComplete="off"
+        hint="Si te lo pasó un vendedor, escribilo acá para que tu pedido quede asociado a él."
+      />}
 
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-700">{error}</p>}
       {message && <p className="rounded-xl bg-green-50 p-3 text-xs font-bold text-green-700">{message}</p>}
@@ -110,7 +122,9 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
       </button>
     </form>
     <div className="mt-6 flex flex-wrap justify-center gap-4 text-xs font-bold text-forest/60">
-      {mode === 'login' && <><Link href="/registro">Crear cuenta</Link><Link href="/recuperar-clave">Olvidé mi contraseña</Link></>}
+      {/* El código del vendedor viaja con el link: quien llega por referido y cae
+          en el login no lo pierde al pasar a registrarse. */}
+      {mode === 'login' && <><Link href={sellerCode ? `/registro?v=${encodeURIComponent(sellerCode)}` : '/registro'}>Crear cuenta</Link><Link href="/recuperar-clave">Olvidé mi contraseña</Link></>}
       {mode !== 'login' && <Link href="/login">Ya tengo una cuenta</Link>}
     </div>
   </Shell>
@@ -127,16 +141,17 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   </main>
 }
 
-function Field({ name, label, type = 'text', defaultValue, autoComplete }: { name: string; label: string; type?: string; defaultValue?: string; autoComplete?: string }) {
+function Field({ name, label, type = 'text', defaultValue, autoComplete, optional, hint }: { name: string; label: string; type?: string; defaultValue?: string; autoComplete?: string; optional?: boolean; hint?: string }) {
   return <label className="block text-xs font-bold text-forest">
     {label}
     <input
-      required
+      required={!optional}
       name={name}
       type={type}
       defaultValue={defaultValue}
       autoComplete={autoComplete}
       className="mt-2 w-full rounded-xl border border-forest/10 bg-white px-4 py-3 font-normal outline-none focus:border-orange"
     />
+    {hint && <span className="mt-1.5 block text-[11px] font-normal leading-4 text-forest/50">{hint}</span>}
   </label>
 }
