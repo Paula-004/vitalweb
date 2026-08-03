@@ -68,6 +68,9 @@ export const authService = {
           email: input.email,
           phone: input.phone,
           password: input.password,
+          // Se omite si viene vacío: el backoffice rechaza un código inexistente,
+          // pero acepta que no venga ninguno (venta directa).
+          ...(input.sellerCode?.trim() ? { sellerCode: input.sellerCode.trim() } : {}),
         }),
       })
       return { ...response, data: toSession(response.data) }
