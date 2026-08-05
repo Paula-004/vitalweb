@@ -34,8 +34,19 @@ export default function MenuOptions() {
   }, []);
 
   useEffect(() => {
-    setDayIndex(0);
-  }, [weekIndex]);
+    const selectedWeek = weeks?.[weekIndex];
+    if (!selectedWeek) return;
+
+    const today = currentDayKey();
+    const todayWithMenu = selectedWeek.days.findIndex(
+      (item) => item.date === today && item.products.length > 0,
+    );
+    const nextMenu = selectedWeek.days.findIndex(
+      (item) => item.date >= today && item.products.length > 0,
+    );
+    const firstMenu = selectedWeek.days.findIndex((item) => item.products.length > 0);
+    setDayIndex(todayWithMenu >= 0 ? todayWithMenu : nextMenu >= 0 ? nextMenu : Math.max(firstMenu, 0));
+  }, [weekIndex, weeks]);
 
   useEffect(() => {
     if (!weeks?.length) return;
