@@ -22,9 +22,10 @@ describe('menú vacío', () => {
     expect(buildWeeks([], [product('prod-1')])).toEqual([])
   })
 
-  it('descarta los menús inactivos', () => {
+  it('muestra los menús futuros expuestos por storefront aunque todavía no estén activos', () => {
     const weeks = buildWeeks([menu('2026-07-14', ['prod-1'], false)], [product('prod-1')])
-    expect(weeks).toEqual([])
+    expect(weeks).toHaveLength(1)
+    expect(weeks[0].days[0].products.map(item => item.id)).toEqual(['prod-1'])
   })
 
   it('arma el día sin platos si el producto ya no está en el catálogo', () => {

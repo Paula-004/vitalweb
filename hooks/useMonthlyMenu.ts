@@ -43,12 +43,13 @@ function weekLabel(start: string, end: string) {
 }
 
 /**
- * Arma el calendario del menú a partir de los menús diarios publicados: las semanas y
- * los días existen sólo si el backoffice los publicó. No se inventan fechas ni platos.
+ * Arma el calendario a partir de los menús que expone el endpoint público de storefront.
+ * El backoffice usa `active` para indicar el menú vigente del día, no su publicación;
+ * por eso un menú futuro visible puede llegar con `active: false`.
  */
 export function buildWeeks(menus: DailyMenu[], products: Product[]): MenuWeek[] {
   const byWeek = new Map<string, MenuDay[]>()
-  for (const menu of menus.filter(item => item.active && item.date).sort((a, b) => a.date.localeCompare(b.date))) {
+  for (const menu of menus.filter(item => item.date).sort((a, b) => a.date.localeCompare(b.date))) {
     const day: MenuDay = {
       date: menu.date,
       label: format(menu.date, { weekday: 'long', day: 'numeric' }).replace(/^\w/, letter => letter.toUpperCase()),
