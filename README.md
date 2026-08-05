@@ -37,20 +37,20 @@ ya está implementada en todos los servicios; no hay que tocar páginas ni compo
 
 No deben ingresarse datos reales de tarjeta, cuenta bancaria o credenciales. Ninguna respuesta mock acredita un pago verdadero.
 
-## Pagos: simulados a propósito
+## Pagos: Mercado Pago o simulación explícita
 
-El cobro real es lo único que todavía **no** está conectado. Mientras
+El backoffice ya expone la integración de Checkout Pro. Mientras
 `NEXT_PUBLIC_API_PAYMENT_CREATE_ENDPOINT` esté vacío, `paymentService.isSimulated` es
 `true`: el checkout deja elegir el resultado a probar, la pantalla de resultado avisa que
 no hubo cobro y `PaymentTransaction.isSimulation` queda en `true`.
 
-Para conectarlo:
+Para activarlo:
 
 1. Mantener claves secretas únicamente en el backoffice. Nunca usar secretos en variables `NEXT_PUBLIC_*`.
-2. Configurar `NEXT_PUBLIC_PAYMENT_PROVIDER` y, sólo si el proveedor lo requiere, su clave pública.
-3. Completar `NEXT_PUBLIC_API_PAYMENT_CREATE_ENDPOINT` y `NEXT_PUBLIC_API_PAYMENT_STATUS_ENDPOINT`.
-4. El backoffice crea la intención, verifica webhooks y confirma el pago. El navegador no decide el estado definitivo ni envía el importe: `paymentService.create` sólo manda `orderId`, `methodId` y `returnUrl`.
-5. Si el proveedor devuelve `redirectUrl`, el checkout redirige solo.
+2. Configurar en el backend `PUBLIC_API_URL`, `STOREFRONT_URL`, `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_WEBHOOK_SECRET`.
+3. Completar los tres endpoints `NEXT_PUBLIC_API_PAYMENT_*` con los valores de `.env.example`.
+4. Registrar en Mercado Pago el webhook HTTPS `/webhooks/payments/mercadopago` del backoffice.
+5. El navegador nunca decide el estado definitivo ni envía el importe: `paymentService.create` sólo manda `orderId`, `methodId` y `returnUrl`.
 
 ## Cupones, favoritos y pedidos
 
