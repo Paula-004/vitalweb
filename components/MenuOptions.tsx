@@ -210,7 +210,7 @@ export default function MenuOptions() {
                 key={product.id}
                 className={`relative overflow-hidden rounded-[1.75rem] border bg-white p-6 text-left shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-forest/10"}`}
               >
-                <ProductImage src={product.imageUrl} alt={product.name} className="mb-4 h-32 w-full rounded-2xl" sizes="(max-width: 768px) 100vw, 25vw" />
+                <ProductImage src={product.imageUrl} alt={product.name} className="mb-4 aspect-square w-full rounded-2xl" sizes="(max-width: 768px) 100vw, 25vw" />
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">Menú</p>
