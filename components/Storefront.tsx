@@ -28,18 +28,18 @@ export default function Storefront() {
   const total = cart.subtotal;
   return (
     <main className="min-h-screen overflow-hidden">
-      <div className="fixed bottom-5 right-5 z-30 flex flex-col items-center gap-2 sm:bottom-auto sm:right-8 sm:top-5">
-        <div className="flex items-center gap-2">
+      <div className="absolute left-3 right-3 top-3 z-30 flex items-center justify-end gap-1.5 sm:left-auto sm:right-8 sm:top-5 sm:flex-col sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <Link
             href={session ? "/mi-cuenta" : "/login"}
-            className="rounded-full border border-forest/15 bg-white/95 px-4 py-3 text-sm font-bold text-forest shadow-soft backdrop-blur hover:bg-cream"
+            className="whitespace-nowrap rounded-full border border-forest/15 bg-white/95 px-3 py-2 text-[11px] font-bold text-forest shadow-soft backdrop-blur hover:bg-cream sm:px-4 sm:py-3 sm:text-sm"
           >
             {session ? `Hola, ${session.user.firstName}` : "Ingresar"}
           </Link>
           {!session && (
             <Link
               href="/registro"
-              className="rounded-full bg-orange px-4 py-3 text-sm font-bold text-white shadow-soft hover:bg-forest"
+              className="whitespace-nowrap rounded-full bg-orange px-3 py-2 text-[11px] font-bold text-white shadow-soft hover:bg-forest sm:px-4 sm:py-3 sm:text-sm"
             >
               Crear cuenta
             </Link>
@@ -48,23 +48,23 @@ export default function Storefront() {
         <button
           onClick={() => setOpen(true)}
           aria-label="Abrir mis pedidos"
-          className="relative flex items-center gap-2 rounded-full bg-forest px-5 py-3 text-sm font-bold text-white shadow-soft hover:bg-orange"
+          className="relative flex items-center gap-1.5 whitespace-nowrap rounded-full bg-forest px-3 py-2 text-[11px] font-bold text-white shadow-soft hover:bg-orange sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"
         >
-          <ShoppingBagIcon className="h-5 w-5" />
+          <ShoppingBagIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           <span>Mis pedidos</span>
           {count > 0 && (
-            <b className="grid h-5 min-w-5 place-items-center rounded-full bg-orange px-1 text-[10px]">
+            <b className="grid h-4 min-w-4 place-items-center rounded-full bg-orange px-1 text-[9px] sm:h-5 sm:min-w-5 sm:text-[10px]">
               {count}
             </b>
           )}
         </button>
       </div>
       <header className="absolute left-0 top-0 z-30 w-full">
-        <div className="flex w-full items-center px-5 py-5 lg:px-8">
+        <div className="hidden w-full items-center px-5 py-5 sm:flex lg:px-8">
           <Logo />
         </div>
       </header>
-      <section className="relative min-h-[760px] bg-[#eee3d5]">
+      <section className="relative min-h-[700px] bg-[#eee3d5] sm:min-h-[760px]">
         <Image
           src="/vital-hero.png"
           alt="Selección de viandas saludables"
@@ -73,36 +73,36 @@ export default function Storefront() {
           className="object-cover object-[58%_center]"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#f7f1e9] via-[#f7f1e9]/90 to-transparent lg:via-[#f7f1e9]/40" />
-        <div className="relative mx-auto flex min-h-[760px] max-w-7xl items-center px-5 pt-24 lg:px-8">
+        <div className="relative mx-auto flex min-h-[700px] max-w-7xl items-start px-5 pb-24 pt-28 sm:min-h-[760px] sm:items-center sm:pt-24 lg:px-8">
           <div className="max-w-2xl">
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-extrabold uppercase tracking-[.16em] text-orange backdrop-blur">
+            <span className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-[10px] font-extrabold uppercase tracking-[.12em] text-orange backdrop-blur sm:px-4 sm:text-xs sm:tracking-[.16em]">
               <span className="h-2 w-2 rounded-full bg-orange" /> Menú semanal
               disponible
             </span>
-            <h1 className="font-display text-5xl font-semibold leading-[.98] tracking-tight text-forest sm:text-7xl lg:text-[86px]">
+            <h1 className="font-display text-[44px] font-semibold leading-[.98] tracking-tight text-forest sm:text-7xl lg:text-[86px]">
               Comé rico.
               <br />
               <i className="font-normal text-orange">Viví liviano.</i>
             </h1>
-            <p className="mt-7 max-w-lg text-base leading-7 text-ink/75 sm:text-lg">
+            <p className="mt-6 max-w-lg text-sm leading-6 text-ink/75 sm:mt-7 sm:text-lg sm:leading-7">
               Viandas caseras, frescas y equilibradas. Nosotros cocinamos; vos
               elegís cómo disfrutar tu día.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-wrap gap-3 sm:mt-9">
               <a
                 href="#menu"
-                className="flex items-center gap-3 rounded-full bg-orange px-6 py-4 text-sm font-extrabold text-white shadow-lg shadow-orange/20 hover:-translate-y-1"
+                className="flex items-center gap-2 rounded-full bg-orange px-5 py-3 text-xs font-extrabold text-white shadow-lg shadow-orange/20 hover:-translate-y-1 sm:gap-3 sm:px-6 sm:py-4 sm:text-sm"
               >
                 Ver menú de hoy <ArrowRightIcon className="h-4 w-4" />
               </a>
               <a
                 href="#como"
-                className="rounded-full border border-forest/20 bg-white/60 px-6 py-4 text-sm font-extrabold text-forest backdrop-blur hover:bg-white"
+                className="rounded-full border border-forest/20 bg-white/70 px-5 py-3 text-xs font-extrabold text-forest backdrop-blur hover:bg-white sm:px-6 sm:py-4 sm:text-sm"
               >
                 ¿Cómo funciona?
               </a>
             </div>
-            <div className="mt-10 flex flex-wrap gap-5 text-xs font-bold text-forest/70">
+            <div className="mt-8 flex flex-col gap-2 text-[11px] font-bold text-forest/70 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-5 sm:text-xs">
               <span className="flex items-center gap-2">
                 <ClockIcon className="h-4 text-orange" />{" "}
                 {deadline ? `Pedí hasta las ${deadline}` : "Pedí con anticipación"}
