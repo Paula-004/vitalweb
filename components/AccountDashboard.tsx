@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addressService, orderService, shippingService } from "@/services";
+import { addressService, orderService } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRequireSession } from "@/hooks/useRequireSession";
@@ -96,32 +96,21 @@ export default function AccountDashboard() {
     event.preventDefault();
     const form = event.currentTarget,
       values = Object.fromEntries(new FormData(form));
-    const postalCode = String(values.postalCode).trim();
-    if (!postalCode) return setError("El código postal es obligatorio.");
-
     await run(async () => {
-      // La zona la determina el código postal, no un valor fijo del frontend.
-      const zones = (await shippingService.getZones()).data;
-      const zone = zones.find(
-        (item) =>
-          item.active &&
-          item.postalCodes.some((code) => code.toUpperCase() === postalCode.toUpperCase()),
-      );
       const address = (
         await addressService.create(profile.id, {
-          label: String(values.label),
+          label: "Dirección",
           recipientName: String(values.recipientName),
           street: String(values.street),
           streetNumber: String(values.streetNumber),
           floor: String(values.floor || ""),
           apartment: String(values.apartment || ""),
-          city: String(values.city),
-          province: String(values.province),
-          postalCode,
+          city: "",
+          province: "",
+          postalCode: "",
           phone: String(values.phone),
           deliveryNotes: String(values.deliveryNotes || ""),
           isDefault: values.isDefault === "on",
-          shippingZoneId: zone?.id,
         })
       ).data;
       const others = address.isDefault
@@ -243,15 +232,11 @@ export default function AccountDashboard() {
               onSubmit={addAddress}
               className="mt-4 grid gap-3 rounded-[2rem] bg-white p-6 sm:grid-cols-2"
             >
-              <Field name="label" label="Nombre de la dirección" />
               <Field name="recipientName" label="Quien recibe" />
               <Field name="street" label="Calle" />
               <Field name="streetNumber" label="Número" />
               <Field name="floor" label="Piso" required={false} />
               <Field name="apartment" label="Departamento" required={false} />
-              <Field name="city" label="Ciudad" />
-              <Field name="province" label="Provincia" />
-              <Field name="postalCode" label="Código postal" />
               <Field name="phone" label="Teléfono" />
               <label className="text-xs font-bold sm:col-span-2">
                 Referencia
