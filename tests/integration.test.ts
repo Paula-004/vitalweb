@@ -104,7 +104,6 @@ describe('cuenta del cliente', () => {
     const { data } = await post('/storefront/auth/register', {
       firstName: 'Test',
       lastName: 'Integración',
-      email: `test-${Date.now()}@vital.test`,
       phone: `11 5555 ${String(Date.now()).slice(-4)}`,
       password: 'unaclave123',
       ...(sellerCode ? { sellerCode } : {}),
@@ -114,7 +113,7 @@ describe('cuenta del cliente', () => {
     const user = backofficeAdapter.user(session.user)
     expect(user.id).toBeTruthy()
     expect(user.firstName).toBe('Test')
-    expect(user.email).toContain('@vital.test')
+    expect(user.phone).toBeTruthy()
     expect(session.accessToken).toBeTruthy()
     expect(new Date(session.expiresAt).getTime()).toBeGreaterThan(Date.now())
     // Ningún endpoint público puede devolver el hash de la contraseña.
@@ -127,7 +126,7 @@ describe('cuenta del cliente', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        firstName: 'Test', lastName: 'Código', email: `bad-${Date.now()}@vital.test`,
+        firstName: 'Test', lastName: 'Código',
         phone: '11 5555 0001', password: 'unaclave123', sellerCode: 'NO-EXISTE-JAMAS',
       }),
     })

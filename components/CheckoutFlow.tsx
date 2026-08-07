@@ -11,11 +11,10 @@ import { Address, PaymentMethod, PaymentStatus, ShippingQuote, ShippingZone } fr
 const labels = ['Identificación', 'Entrega', 'Dirección o retiro', 'Fecha y horario', 'Pago', 'Confirmación']
 const money = (n: number) => '$' + n.toLocaleString('es-AR')
 const todayISO = () => new Date().toISOString().slice(0, 10)
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const PHONE_PATTERN = /^[\d\s+()-]{6,}$/
 
-interface Guest { firstName: string; lastName: string; email: string; phone: string }
-const emptyGuest: Guest = { firstName: '', lastName: '', email: '', phone: '' }
+interface Guest { firstName: string; lastName: string; phone: string }
+const emptyGuest: Guest = { firstName: '', lastName: '', phone: '' }
 
 export default function CheckoutFlow() {
   const router = useRouter()
@@ -103,7 +102,6 @@ export default function CheckoutFlow() {
       case 0:
         if (session) return ''
         if (!guest.firstName.trim() || !guest.lastName.trim()) return 'Completá tu nombre y apellido.'
-        if (!EMAIL_PATTERN.test(guest.email)) return 'Ingresá un correo válido.'
         if (!PHONE_PATTERN.test(guest.phone)) return 'Ingresá un teléfono de contacto válido.'
         return ''
       case 2:
@@ -144,7 +142,7 @@ export default function CheckoutFlow() {
       // El contacto viaja siempre: el backoffice identifica al cliente por teléfono,
       // y en retiro por el local no hay dirección de la que sacarlo.
       const contact = session
-        ? { firstName: session.user.firstName, lastName: session.user.lastName, email: session.user.email, phone: session.user.phone }
+        ? { firstName: session.user.firstName, lastName: session.user.lastName, phone: session.user.phone }
         : guest
       const order = (await orderService.create({
         userId: session?.user.id,
@@ -192,13 +190,12 @@ export default function CheckoutFlow() {
     <div className="mt-7 grid gap-7 lg:grid-cols-[1fr_320px]">
       <section className="min-h-[400px] rounded-[2rem] bg-white p-6 sm:p-8">
         {step === 0 && <Step title="Identificación">{session
-          ? <Card title={`${session.user.firstName} ${session.user.lastName}`} text={`${session.user.email} · ${session.user.phone}`} />
+          ? <Card title={`${session.user.firstName} ${session.user.lastName}`} text={session.user.phone} />
           : <div>
             <p className="text-sm text-ink/60">Continuá como invitado o iniciá sesión para guardar el pedido.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <Field label="Nombre" value={guest.firstName} change={value => setGuest(old => ({ ...old, firstName: value }))} />
               <Field label="Apellido" value={guest.lastName} change={value => setGuest(old => ({ ...old, lastName: value }))} />
-              <Field label="Correo" type="email" value={guest.email} change={value => setGuest(old => ({ ...old, email: value }))} />
               <Field label="Teléfono" value={guest.phone} change={value => setGuest(old => ({ ...old, phone: value }))} />
             </div>
             <Link href="/login" className="mt-4 inline-block text-sm font-bold text-orange">Ingresar a mi cuenta</Link>

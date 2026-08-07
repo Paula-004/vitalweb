@@ -11,7 +11,6 @@ type Value = {
   login: (input: LoginInput) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
   logout: () => Promise<void>
-  recover: (email: string) => Promise<void>
   resetPassword: (input: ResetPasswordInput) => Promise<void>
   updateProfile: (input: UpdateProfileInput) => Promise<void>
   setSession: React.Dispatch<React.SetStateAction<AuthSession | null>>
@@ -29,7 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (input: LoginInput) => { setSession((await authService.login(input)).data) }, [])
   const register = useCallback(async (input: RegisterInput) => { setSession((await authService.register(input)).data) }, [])
   const logout = useCallback(async () => { await authService.logout(); setSession(null) }, [])
-  const recover = useCallback(async (email: string) => { await authService.recoverPassword(email) }, [])
   const resetPassword = useCallback(async (input: ResetPasswordInput) => { await authService.resetPassword(input) }, [])
   const updateProfile = useCallback(async (input: UpdateProfileInput) => {
     if (!session) throw new Error('No hay una sesión iniciada.')
@@ -38,8 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session])
 
   const value = useMemo(
-    () => ({ session, ready, login, register, logout, recover, resetPassword, updateProfile, setSession }),
-    [session, ready, login, register, logout, recover, resetPassword, updateProfile],
+    () => ({ session, ready, login, register, logout, resetPassword, updateProfile, setSession }),
+    [session, ready, login, register, logout, resetPassword, updateProfile],
   )
   return <Context.Provider value={value}>{children}</Context.Provider>
 }

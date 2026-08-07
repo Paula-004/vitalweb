@@ -21,7 +21,7 @@ export interface User {
   id: EntityId
   firstName: string
   lastName: string
-  email: string
+  email?: string
   phone: string
   addresses: Address[]
   createdAt: string
@@ -145,7 +145,7 @@ export interface CreateOrderInput {
   /** Fecha de entrega o retiro en formato `YYYY-MM-DD`. */
   deliveryDate?: string
   /** Datos de contacto cuando el pedido se hace sin cuenta. */
-  contact?: { firstName: string; lastName: string; email: string; phone: string }
+  contact?: { firstName: string; lastName: string; phone: string }
   couponCode?: string
   notes?: string
   shippingCost?: number

@@ -52,8 +52,9 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerLogin, { method: 'POST', body: JSON.stringify(input) })
       return { ...response, data: toSession(response.data) }
     }
-    const user = mockUsers.find(item => item.email.toLowerCase() === input.email.toLowerCase())
-    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Correo o contraseña incorrectos.', 401)
+    const phone = input.phone.replace(/\D/g, '')
+    const user = mockUsers.find(item => item.phone.replace(/\D/g, '') === phone)
+    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Teléfono o contraseña incorrectos.', 401)
     return mockResponse(session(user))
   },
 
@@ -65,7 +66,6 @@ export const authService = {
           fullName: `${input.firstName} ${input.lastName}`.trim(),
           firstName: input.firstName,
           lastName: input.lastName,
-          email: input.email,
           phone: input.phone,
           password: input.password,
           // Se omite si viene vacío: el backoffice rechaza un código inexistente,
@@ -75,24 +75,13 @@ export const authService = {
       })
       return { ...response, data: toSession(response.data) }
     }
-    if (mockUsers.some(user => user.email.toLowerCase() === input.email.toLowerCase())) {
-      throw new DataSourceError('Ya existe una cuenta con ese correo.', 409)
+    const phone = input.phone.replace(/\D/g, '')
+    if (mockUsers.some(user => user.phone.replace(/\D/g, '') === phone)) {
+      throw new DataSourceError('Ya existe una cuenta con ese teléfono.', 409)
     }
-    const user = { id: `user-mock-${Date.now()}`, firstName: input.firstName, lastName: input.lastName, email: input.email, phone: input.phone, addresses: [], createdAt: new Date().toISOString() }
+    const user = { id: `user-mock-${Date.now()}`, firstName: input.firstName, lastName: input.lastName, phone: input.phone, addresses: [], createdAt: new Date().toISOString() }
     mockUsers.push(user)
     return mockResponse(session(user))
-  },
-
-  /**
-   * Respuesta neutra a propósito: nunca revela si el correo existe.
-   * El backoffice genera el token de un solo uso y envía el mensaje.
-   */
-  async recoverPassword(email: string) {
-    if (useApiFor(apiEndpoints.passwordRecovery)) {
-      const response = await apiRequest<{ sent?: boolean }>(apiEndpoints.passwordRecovery, { method: 'POST', body: JSON.stringify({ email }) })
-      return { ...response, data: { sent: true } }
-    }
-    return mockResponse({ sent: true })
   },
 
   async resetPassword(input: ResetPasswordInput) {

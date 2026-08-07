@@ -225,7 +225,6 @@ export default function AccountDashboard() {
           <Field name="firstName" label="Nombre" value={profile.firstName} />
           <Field name="lastName" label="Apellido" value={profile.lastName} />
           <Field name="phone" label="Teléfono" value={profile.phone} />
-          <Field name="email" label="Correo" value={profile.email} disabled />
           <button className="rounded-full bg-orange px-5 py-3 text-sm font-bold text-white sm:col-span-2">
             Guardar cambios
           </button>

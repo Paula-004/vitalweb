@@ -4,53 +4,52 @@ import { DataSourceError } from '@/types/api'
 import { AuthSession } from '@/types/auth'
 import { clearStorage } from './setup'
 
-const DEMO_EMAIL = 'marina@vital.demo'
+const DEMO_PHONE = '+54 9 11 5555 0101'
 const DEMO_PASSWORD = 'vital123'
 
 beforeEach(() => clearStorage())
 
 describe('login', () => {
   it('devuelve la sesión del cliente con credenciales válidas', async () => {
-    const { data } = await authService.login({ email: DEMO_EMAIL, password: DEMO_PASSWORD })
-    expect(data.user.email).toBe(DEMO_EMAIL)
+    const { data } = await authService.login({ phone: DEMO_PHONE, password: DEMO_PASSWORD })
+    expect(data.user.phone).toBe(DEMO_PHONE)
     expect(data.accessToken).toBeTruthy()
   })
 
-  it('ignora mayúsculas en el correo', async () => {
-    const { data } = await authService.login({ email: DEMO_EMAIL.toUpperCase(), password: DEMO_PASSWORD })
-    expect(data.user.email).toBe(DEMO_EMAIL)
+  it('ignora el formato del teléfono', async () => {
+    const { data } = await authService.login({ phone: '+5491155550101', password: DEMO_PASSWORD })
+    expect(data.user.phone).toBe(DEMO_PHONE)
   })
 
   it('rechaza una contraseña incorrecta con 401', async () => {
-    await expect(authService.login({ email: DEMO_EMAIL, password: 'incorrecta' }))
+    await expect(authService.login({ phone: DEMO_PHONE, password: 'incorrecta' }))
       .rejects.toMatchObject({ status: 401 })
   })
 
-  it('no revela si el correo existe cuando falla', async () => {
-    const error = await authService.login({ email: 'nadie@vital.demo', password: 'x' }).catch(cause => cause)
+  it('no revela si el teléfono existe cuando falla', async () => {
+    const error = await authService.login({ phone: '11 0000 0000', password: 'x' }).catch(cause => cause)
     expect(error).toBeInstanceOf(DataSourceError)
-    expect(error.message).toBe('Correo o contraseña incorrectos.')
+    expect(error.message).toBe('Teléfono o contraseña incorrectos.')
   })
 })
 
 describe('registro', () => {
   it('crea la cuenta y deja al cliente con sesión iniciada', async () => {
-    const email = `nuevo-${Date.now()}@vital.demo`
-    const { data } = await authService.register({ firstName: 'Ana', lastName: 'Pérez', email, phone: '+54 11 5555 5555', password: 'unaclave123' })
+    const { data } = await authService.register({ firstName: 'Ana', lastName: 'Pérez', phone: `+54 11 ${String(Date.now()).slice(-8)}`, password: 'unaclave123' })
     expect(data.user.firstName).toBe('Ana')
     expect(data.user.addresses).toEqual([])
     expect(data.accessToken).toBeTruthy()
   })
 
-  it('rechaza con 409 un correo ya registrado', async () => {
-    await expect(authService.register({ firstName: 'Otra', lastName: 'Marina', email: DEMO_EMAIL, phone: '+54 11 4444 4444', password: 'unaclave123' }))
+  it('rechaza con 409 un teléfono ya registrado', async () => {
+    await expect(authService.register({ firstName: 'Otra', lastName: 'Marina', phone: DEMO_PHONE, password: 'unaclave123' }))
       .rejects.toMatchObject({ status: 409 })
   })
 })
 
 describe('sesión expirada', () => {
   const sessionWith = (expiresAt: string): AuthSession => ({
-    user: { id: 'user-demo-001', firstName: 'Marina', lastName: 'Test', email: DEMO_EMAIL, phone: '', addresses: [], createdAt: '2026-01-01T00:00:00Z' },
+    user: { id: 'user-demo-001', firstName: 'Marina', lastName: 'Test', phone: DEMO_PHONE, addresses: [], createdAt: '2026-01-01T00:00:00Z' },
     accessToken: 'token-de-prueba',
     expiresAt,
   })
@@ -80,12 +79,7 @@ describe('sesión expirada', () => {
   })
 })
 
-describe('recuperación de contraseña', () => {
-  it('responde de forma neutra aunque el correo no exista', async () => {
-    const { data } = await authService.recoverPassword('desconocido@vital.demo')
-    expect(data.sent).toBe(true)
-  })
-
+describe('restablecimiento de contraseña', () => {
   it('rechaza un token vacío al restablecer', async () => {
     await expect(authService.resetPassword({ token: '', password: 'unaclave123' }))
       .rejects.toMatchObject({ status: 422 })
