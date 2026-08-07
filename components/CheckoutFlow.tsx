@@ -59,6 +59,11 @@ export default function CheckoutFlow() {
     if (!session) return
     const initial = session.user.addresses.find(item => item.isDefault) ?? session.user.addresses[0]
     setAddressId(initial?.id ?? '')
+    setGuest(current => ({
+      firstName: current.firstName || session.user.firstName,
+      lastName: current.lastName || session.user.lastName,
+      phone: current.phone || session.user.phone,
+    }))
   }, [session])
 
   // El costo de envío y las franjas los define el backoffice, no el navegador.
@@ -100,8 +105,9 @@ export default function CheckoutFlow() {
   const stepError = useCallback((index: number): string => {
     switch (index) {
       case 0:
-        if (session) return ''
-        if (!guest.firstName.trim() || !guest.lastName.trim()) return 'Completá tu nombre y apellido.'
+        if (session?.user.phone) return ''
+        if (!guest.firstName.trim()) return 'Completá tu nombre.'
+        if (!session && !guest.lastName.trim()) return 'Completá tu apellido.'
         if (!PHONE_PATTERN.test(guest.phone)) return 'Ingresá un teléfono de contacto válido.'
         return ''
       case 2:
@@ -142,7 +148,11 @@ export default function CheckoutFlow() {
       // El contacto viaja siempre: el backoffice identifica al cliente por teléfono,
       // y en retiro por el local no hay dirección de la que sacarlo.
       const contact = session
-        ? { firstName: session.user.firstName, lastName: session.user.lastName, phone: session.user.phone }
+        ? {
+            firstName: guest.firstName || session.user.firstName,
+            lastName: guest.lastName || session.user.lastName,
+            phone: guest.phone || session.user.phone,
+          }
         : guest
       const order = (await orderService.create({
         userId: session?.user.id,
@@ -189,16 +199,16 @@ export default function CheckoutFlow() {
     <div className="scrollbar-none mt-7 flex gap-2 overflow-auto">{labels.map((label, index) => <span key={label} className={`whitespace-nowrap rounded-full px-4 py-2 text-[10px] font-bold ${index === step ? 'bg-forest text-white' : index < step ? 'bg-[#dce5d6]' : 'bg-white text-ink/40'}`}>{index + 1}. {label}</span>)}</div>
     <div className="mt-7 grid gap-7 lg:grid-cols-[1fr_320px]">
       <section className="min-h-[400px] rounded-[2rem] bg-white p-6 sm:p-8">
-        {step === 0 && <Step title="Identificación">{session
+        {step === 0 && <Step title="Identificación">{session?.user.phone
           ? <Card title={`${session.user.firstName} ${session.user.lastName}`} text={session.user.phone} />
           : <div>
-            <p className="text-sm text-ink/60">Continuá como invitado o iniciá sesión para guardar el pedido.</p>
+            <p className="text-sm text-ink/60">{session ? 'Completá los datos de contacto para este pedido.' : 'Continuá como invitado o iniciá sesión para guardar el pedido.'}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <Field label="Nombre" value={guest.firstName} change={value => setGuest(old => ({ ...old, firstName: value }))} />
-              <Field label="Apellido" value={guest.lastName} change={value => setGuest(old => ({ ...old, lastName: value }))} />
+              {!session && <Field label="Apellido" value={guest.lastName} change={value => setGuest(old => ({ ...old, lastName: value }))} />}
               <Field label="Teléfono" value={guest.phone} change={value => setGuest(old => ({ ...old, phone: value }))} />
             </div>
-            <Link href="/login" className="mt-4 inline-block text-sm font-bold text-orange">Ingresar a mi cuenta</Link>
+            {!session && <Link href="/login" className="mt-4 inline-block text-sm font-bold text-orange">Ingresar a mi cuenta</Link>}
           </div>}</Step>}
 
         {step === 1 && <Step title="Forma de entrega"><div className="grid gap-3 sm:grid-cols-2">

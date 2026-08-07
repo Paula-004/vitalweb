@@ -66,6 +66,7 @@ export const backofficeAdapter={
   const [firstFromFull='',...restFromFull]=fullName.split(' ').filter(Boolean)
   return{
    id:text(source,'id','user_id','client_id'),
+   username:text(source,'username','user_name','usuario'),
    firstName:text(source,'firstName','first_name','nombre')||firstFromFull||'',
    lastName:text(source,'lastName','last_name','apellido')||restFromFull.join(' '),
    email:text(source,'email','correo'),

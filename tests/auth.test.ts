@@ -4,52 +4,53 @@ import { DataSourceError } from '@/types/api'
 import { AuthSession } from '@/types/auth'
 import { clearStorage } from './setup'
 
-const DEMO_PHONE = '+54 9 11 5555 0101'
+const DEMO_USERNAME = 'marina'
 const DEMO_PASSWORD = 'vital123'
 
 beforeEach(() => clearStorage())
 
 describe('login', () => {
   it('devuelve la sesión del cliente con credenciales válidas', async () => {
-    const { data } = await authService.login({ phone: DEMO_PHONE, password: DEMO_PASSWORD })
-    expect(data.user.phone).toBe(DEMO_PHONE)
+    const { data } = await authService.login({ username: DEMO_USERNAME, password: DEMO_PASSWORD })
+    expect(data.user.firstName).toBe('Marina')
     expect(data.accessToken).toBeTruthy()
   })
 
-  it('ignora el formato del teléfono', async () => {
-    const { data } = await authService.login({ phone: '+5491155550101', password: DEMO_PASSWORD })
-    expect(data.user.phone).toBe(DEMO_PHONE)
+  it('ignora mayúsculas en el usuario', async () => {
+    const { data } = await authService.login({ username: 'MARINA', password: DEMO_PASSWORD })
+    expect(data.user.firstName).toBe('Marina')
   })
 
   it('rechaza una contraseña incorrecta con 401', async () => {
-    await expect(authService.login({ phone: DEMO_PHONE, password: 'incorrecta' }))
+    await expect(authService.login({ username: DEMO_USERNAME, password: 'incorrecta' }))
       .rejects.toMatchObject({ status: 401 })
   })
 
-  it('no revela si el teléfono existe cuando falla', async () => {
-    const error = await authService.login({ phone: '11 0000 0000', password: 'x' }).catch(cause => cause)
+  it('no revela si el usuario existe cuando falla', async () => {
+    const error = await authService.login({ username: 'nadie', password: 'x' }).catch(cause => cause)
     expect(error).toBeInstanceOf(DataSourceError)
-    expect(error.message).toBe('Teléfono o contraseña incorrectos.')
+    expect(error.message).toBe('Usuario o contraseña incorrectos.')
   })
 })
 
 describe('registro', () => {
   it('crea la cuenta y deja al cliente con sesión iniciada', async () => {
-    const { data } = await authService.register({ firstName: 'Ana', lastName: 'Pérez', phone: `+54 11 ${String(Date.now()).slice(-8)}`, password: 'unaclave123' })
-    expect(data.user.firstName).toBe('Ana')
+    const username = `ana${Date.now()}`
+    const { data } = await authService.register({ username, password: 'unaclave123' })
+    expect(data.user.username).toBe(username)
     expect(data.user.addresses).toEqual([])
     expect(data.accessToken).toBeTruthy()
   })
 
-  it('rechaza con 409 un teléfono ya registrado', async () => {
-    await expect(authService.register({ firstName: 'Otra', lastName: 'Marina', phone: DEMO_PHONE, password: 'unaclave123' }))
+  it('rechaza con 409 un usuario ya registrado', async () => {
+    await expect(authService.register({ username: DEMO_USERNAME, password: 'unaclave123' }))
       .rejects.toMatchObject({ status: 409 })
   })
 })
 
 describe('sesión expirada', () => {
   const sessionWith = (expiresAt: string): AuthSession => ({
-    user: { id: 'user-demo-001', firstName: 'Marina', lastName: 'Test', phone: DEMO_PHONE, addresses: [], createdAt: '2026-01-01T00:00:00Z' },
+    user: { id: 'user-demo-001', username: DEMO_USERNAME, firstName: 'Marina', lastName: 'Test', phone: '', addresses: [], createdAt: '2026-01-01T00:00:00Z' },
     accessToken: 'token-de-prueba',
     expiresAt,
   })

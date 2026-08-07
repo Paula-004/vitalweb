@@ -19,6 +19,7 @@ export interface Address {
 
 export interface User {
   id: EntityId
+  username?: string
   firstName: string
   lastName: string
   email?: string

@@ -52,9 +52,9 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerLogin, { method: 'POST', body: JSON.stringify(input) })
       return { ...response, data: toSession(response.data) }
     }
-    const phone = input.phone.replace(/\D/g, '')
-    const user = mockUsers.find(item => item.phone.replace(/\D/g, '') === phone)
-    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Teléfono o contraseña incorrectos.', 401)
+    const username = input.username.trim().toLowerCase()
+    const user = mockUsers.find(item => (item.username ?? item.firstName).toLowerCase() === username)
+    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Usuario o contraseña incorrectos.', 401)
     return mockResponse(session(user))
   },
 
@@ -63,10 +63,7 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerRegister, {
         method: 'POST',
         body: JSON.stringify({
-          fullName: `${input.firstName} ${input.lastName}`.trim(),
-          firstName: input.firstName,
-          lastName: input.lastName,
-          phone: input.phone,
+          username: input.username,
           password: input.password,
           // Se omite si viene vacío: el backoffice rechaza un código inexistente,
           // pero acepta que no venga ninguno (venta directa).
@@ -75,11 +72,11 @@ export const authService = {
       })
       return { ...response, data: toSession(response.data) }
     }
-    const phone = input.phone.replace(/\D/g, '')
-    if (mockUsers.some(user => user.phone.replace(/\D/g, '') === phone)) {
-      throw new DataSourceError('Ya existe una cuenta con ese teléfono.', 409)
+    const username = input.username.trim().toLowerCase()
+    if (mockUsers.some(user => (user.username ?? user.firstName).toLowerCase() === username)) {
+      throw new DataSourceError('Ese nombre de usuario ya está en uso.', 409)
     }
-    const user = { id: `user-mock-${Date.now()}`, firstName: input.firstName, lastName: input.lastName, phone: input.phone, addresses: [], createdAt: new Date().toISOString() }
+    const user = { id: `user-mock-${Date.now()}`, username, firstName: username, lastName: '', phone: '', addresses: [], createdAt: new Date().toISOString() }
     mockUsers.push(user)
     return mockResponse(session(user))
   },
