@@ -205,6 +205,7 @@ export default function MenuOptions() {
             const quantity = selections[keyOf(day.date, product.id)] ?? 0;
             const price = product.promotionalPrice ?? product.price;
             const soldOut = !product.available || product.stock < 1;
+            const orderingClosed = !product.available && Boolean(product.orderDeadline);
             return (
               <article
                 key={product.id}
@@ -241,7 +242,11 @@ export default function MenuOptions() {
                 )}
                 <div className="mt-5 flex items-center justify-between border-t border-forest/10 pt-5">
                   <span className="text-xs font-extrabold text-forest">
-                    {soldOut ? "Agotado" : `Para ${day.label.toLowerCase()}`}
+                    {orderingClosed
+                      ? `Pedidos cerrados · límite ${product.orderDeadline} hs`
+                      : soldOut
+                        ? "Agotado"
+                        : `Para ${day.label.toLowerCase()}`}
                   </span>
                   <div className="flex items-center gap-3 rounded-full bg-cream/70 p-1">
                     <button
