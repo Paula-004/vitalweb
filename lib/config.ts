@@ -25,7 +25,7 @@ export const apiEndpoints = {
   categories: process.env.NEXT_PUBLIC_API_CATEGORIES_ENDPOINT,
   dailyMenu: process.env.NEXT_PUBLIC_API_DAILY_MENU_ENDPOINT,
   weeklyMenu: process.env.NEXT_PUBLIC_API_WEEKLY_MENU_ENDPOINT,
-  promotions: process.env.NEXT_PUBLIC_API_PROMOTIONS_ENDPOINT,
+  promotions: process.env.NEXT_PUBLIC_API_PROMOTIONS_ENDPOINT || '/storefront/promotions',
   recommendations: process.env.NEXT_PUBLIC_API_RECOMMENDATIONS_ENDPOINT,
   // Datos del cliente
   addresses: process.env.NEXT_PUBLIC_API_ADDRESSES_ENDPOINT ?? '/storefront/me/addresses',
@@ -37,6 +37,7 @@ export const apiEndpoints = {
   // Pedidos
   orders: process.env.NEXT_PUBLIC_API_ORDERS_ENDPOINT,
   myOrders: process.env.NEXT_PUBLIC_API_MY_ORDERS_ENDPOINT,
+  mealBalance: process.env.NEXT_PUBLIC_API_MEAL_BALANCE_ENDPOINT || '/storefront/me/meal-balance',
   // Pagos y cupones
   paymentMethods: process.env.NEXT_PUBLIC_API_PAYMENT_ENDPOINT,
   paymentCreate: process.env.NEXT_PUBLIC_API_PAYMENT_CREATE_ENDPOINT,

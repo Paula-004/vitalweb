@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCart } from '@/contexts/CartContext'
 import { useStoreConfig } from '@/hooks/useStoreConfig'
-import { cartService, couponService, orderService, paymentService, shippingService } from '@/services'
-import { Address, PaymentMethod, PaymentStatus, ShippingQuote, ShippingZone } from '@/types/domain'
+import { cartService, couponService, mealPlanService, orderService, paymentService, shippingService } from '@/services'
+import { Address, MealBalanceSummary, PaymentMethod, PaymentStatus, ShippingQuote, ShippingZone } from '@/types/domain'
 
 const labels = ['Identificación', 'Entrega', 'Dirección o retiro', 'Fecha y horario', 'Pago', 'Confirmación']
 const money = (n: number) => '$' + n.toLocaleString('es-AR')
@@ -40,6 +40,7 @@ export default function CheckoutFlow() {
   const [freeShipping, setFreeShipping] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [mealBalance, setMealBalance] = useState<MealBalanceSummary>({ totalRemaining: 0, balances: [] })
 
   const savedAddress = session?.user.addresses.find(item => item.id === addressId)
   const postalCode = savedAddress?.postalCode ?? address.postalCode ?? ''
@@ -64,6 +65,13 @@ export default function CheckoutFlow() {
       lastName: current.lastName || session.user.lastName,
       phone: current.phone || session.user.phone,
     }))
+  }, [session])
+
+  useEffect(() => {
+    if (!session) { setMealBalance({ totalRemaining: 0, balances: [] }); return }
+    mealPlanService.getMyBalance()
+      .then(response => setMealBalance(response.data))
+      .catch(() => setMealBalance({ totalRemaining: 0, balances: [] }))
   }, [session])
 
   // El costo de envío y las franjas los define el backoffice, no el navegador.
@@ -101,6 +109,8 @@ export default function CheckoutFlow() {
   const shipping = delivery === 'pickup' || freeShipping ? 0 : quote?.cost ?? 0
   const total = Math.max(0, cart.subtotal - couponDiscount) + shipping
   const slots = quote?.timeSlots ?? []
+  const usesMealPlan = Boolean(session && mealBalance.totalRemaining > 0)
+  const mealPlanCoversCart = usesMealPlan && mealBalance.totalRemaining >= cart.count
 
   const stepError = useCallback((index: number): string => {
     switch (index) {
@@ -120,11 +130,12 @@ export default function CheckoutFlow() {
         if (!slotId) return 'Elegí una franja horaria.'
         return ''
       case 4:
+        if (usesMealPlan) return mealPlanCoversCart ? '' : `Tu plan tiene ${mealBalance.totalRemaining} vianda(s) y elegiste ${cart.count}.`
         return paymentId ? '' : 'Elegí un medio de pago.'
       default:
         return ''
     }
-  }, [session, guest, delivery, savedAddress, address, zoneId, quote, date, slotId, paymentId])
+  }, [session, guest, delivery, savedAddress, address, zoneId, quote, date, slotId, paymentId, usesMealPlan, mealPlanCoversCart, mealBalance.totalRemaining, cart.count])
 
   const goNext = () => {
     const message = stepError(step)
@@ -141,7 +152,7 @@ export default function CheckoutFlow() {
         const message = stepError(index)
         if (message) { setStep(index); throw new Error(message) }
       }
-      const issues = cartService.validate(cart.cart, cart.products, minimumOrder, { date })
+      const issues = cartService.validate(cart.cart, cart.products, usesMealPlan ? 0 : minimumOrder, { date })
       if (issues.length) throw new Error(issues[0])
 
       const shippingAddress = delivery === 'delivery' ? (savedAddress ?? makeAddress(address, zoneId)) : undefined
@@ -167,6 +178,12 @@ export default function CheckoutFlow() {
         couponCode: cart.cart.couponCode,
         notes: cart.cart.generalNotes,
       })).data
+
+      if (order.mealCreditsUsed) {
+        cart.clear()
+        router.push(`/pedido-confirmado?order=${encodeURIComponent(order.id)}&credits=${order.mealCreditsUsed}&remaining=${order.mealBalanceRemaining ?? 0}`)
+        return
+      }
 
       const payment = (await paymentService.create({
         orderId: order.id,
@@ -245,9 +262,12 @@ export default function CheckoutFlow() {
           {slots.map(item => <Option key={item.id} active={slotId === item.id} onClick={() => setSlotId(item.id)} title={item.label} text={delivery === 'pickup' ? 'Horario estimado de retiro' : 'Franja de entrega'} />)}
         </Step>}
 
-        {step === 4 && <Step title="Medio de pago">
-          <div className="space-y-2">{visiblePayments.map(item => <Option key={item.id} active={paymentId === item.id} onClick={() => setPaymentId(item.id)} title={item.name} text={item.description ?? 'Método disponible.'} />)}</div>
-          {paymentService.isSimulated && <div className="mt-5 rounded-xl bg-[#fff2d8] p-4 text-xs text-[#6d4b12]">
+        {step === 4 && <Step title={usesMealPlan ? "Tu plan de viandas" : "Medio de pago"}>
+          {usesMealPlan ? <div className={`rounded-2xl p-6 ${mealPlanCoversCart ? 'bg-[#eef5e9] text-forest' : 'bg-red-50 text-red-700'}`}>
+            <b className="text-lg">Tenés {mealBalance.totalRemaining} vianda(s) a favor</b>
+            <p className="mt-2 text-sm">Este pedido usa {cart.count}. {mealPlanCoversCart ? `Después te quedarán ${mealBalance.totalRemaining - cart.count}.` : `Te faltan ${cart.count - mealBalance.totalRemaining}.`}</p>
+          </div> : <div className="space-y-2">{visiblePayments.map(item => <Option key={item.id} active={paymentId === item.id} onClick={() => setPaymentId(item.id)} title={item.name} text={item.description ?? 'Método disponible.'} />)}</div>}
+          {!usesMealPlan && paymentService.isSimulated && <div className="mt-5 rounded-xl bg-[#fff2d8] p-4 text-xs text-[#6d4b12]">
             <b>Simulador explícito:</b> el cobro real todavía no está conectado. No ingreses datos reales de tarjeta ni de cuenta. Elegí el resultado que querés probar.
             <select aria-label="Resultado del pago demo" value={demoStatus} onChange={event => setDemoStatus(event.target.value as PaymentStatus)} className="mt-2 w-full rounded-lg border bg-white p-2">
               <option value="approved">Aprobado</option><option value="pending">Pendiente</option><option value="rejected">Rechazado</option><option value="cancelled">Cancelado</option>
@@ -262,8 +282,8 @@ export default function CheckoutFlow() {
           })}</div>
           <div className="mt-5 border-t pt-4 text-sm">
             <p>Entrega: <b>{delivery === 'delivery' ? 'Domicilio' : 'Retiro'}</b> · <b>{date}</b></p>
-            <p>Pago: <b>{visiblePayments.find(item => item.id === paymentId)?.name ?? 'Sin seleccionar'}</b></p>
-            {paymentService.isSimulated && <p>Resultado demo: <b>{demoStatus}</b></p>}
+            <p>Pago: <b>{usesMealPlan ? `${cart.count} vianda(s) del plan` : visiblePayments.find(item => item.id === paymentId)?.name ?? 'Sin seleccionar'}</b></p>
+            {!usesMealPlan && paymentService.isSimulated && <p>Resultado demo: <b>{demoStatus}</b></p>}
           </div>
         </Step>}
 
@@ -279,10 +299,10 @@ export default function CheckoutFlow() {
       <aside className="h-fit rounded-[2rem] bg-forest p-6 text-cream">
         <h2 className="font-display text-2xl">Resumen</h2>
         <div className="mt-5 space-y-3 text-sm">
-          <Row label="Productos" value={money(cart.subtotal)} />
+          <Row label="Productos" value={usesMealPlan ? `${cart.count} del plan` : money(cart.subtotal)} />
           {couponDiscount > 0 && <Row label={`Cupón ${cart.cart.couponCode}`} value={`- ${money(couponDiscount)}`} />}
           <Row label="Envío" value={quoting ? 'Calculando...' : shipping ? money(shipping) : 'Sin cargo'} />
-          <p className="flex justify-between border-t border-cream/20 pt-4 text-lg"><span>Total</span><b>{money(total)}</b></p>
+          <p className="flex justify-between border-t border-cream/20 pt-4 text-lg"><span>Total</span><b>{usesMealPlan ? 'Incluido en tu plan' : money(total)}</b></p>
         </div>
       </aside>
     </div>

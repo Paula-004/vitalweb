@@ -121,6 +121,9 @@ export const backofficeAdapter={
   startsAt:text(source,'startsAt','starts_at','desde'),
   endsAt:text(source,'endsAt','ends_at','hasta'),
   active:flag(source,true,'active','activo'),
+  period:optionalText(source,'period','periodo') as Promotion['period'],
+  mealCount:optionalNumber(source,'mealCount','meal_count','cantidad_viandas'),
+  price:optionalNumber(source,'price','precio'),
  }},
  coupon(source:Source):Coupon{return{
   id:text(source,'id'),
@@ -159,6 +162,8 @@ export const backofficeAdapter={
   shippingAddress:value(source,'shippingAddress','shipping_address','direccion')===undefined?undefined:backofficeAdapter.address(value(source,'shippingAddress','shipping_address','direccion') as Source),
   couponCode:optionalText(source,'couponCode','coupon_code'),
   notes:optionalText(source,'notes','notas'),
+  mealCreditsUsed:optionalNumber(source,'mealCreditsUsed','meal_credits_used','viandas_descontadas'),
+  mealBalanceRemaining:optionalNumber(source,'mealBalanceRemaining','meal_balance_remaining','saldo_viandas'),
   createdAt:text(source,'createdAt','created_at')||new Date().toISOString(),
  }},
  shippingZone(source:Source):ShippingZone{return{

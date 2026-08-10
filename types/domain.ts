@@ -104,6 +104,27 @@ export interface Promotion {
   startsAt: string
   endsAt: string
   active: boolean
+  /** Campos de los paquetes prepagos administrados desde Gestion-de-clientes. */
+  period?: 'DAY' | 'WEEK' | 'MONTH'
+  mealCount?: number
+  price?: number
+}
+
+export interface MealBalance {
+  id: number
+  planId: number
+  planName: string
+  period: 'DAY' | 'WEEK' | 'MONTH'
+  totalMeals: number
+  remainingMeals: number
+  usedMeals: number
+  startsAt: string
+  endsAt: string
+}
+
+export interface MealBalanceSummary {
+  totalRemaining: number
+  balances: MealBalance[]
 }
 
 export interface OrderDetail {
@@ -133,6 +154,8 @@ export interface Order {
   timeSlotId: EntityId
   couponCode?: string
   notes?: string
+  mealCreditsUsed?: number
+  mealBalanceRemaining?: number
   createdAt: string
 }
 
