@@ -30,16 +30,22 @@ function imageHosts() {
   return patterns;
 }
 
+const isMobileBuild = process.env.VITALWEB_TARGET === 'mobile';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: { remotePatterns: imageHosts() },
-  async rewrites() {
-    return [
-      {
-        source: '/api/backend/:path*',
-        destination: 'https://vitalfood-backend.onrender.com/:path*',
-      },
-    ];
-  },
+  ...(isMobileBuild
+    ? { output: 'export', trailingSlash: true }
+    : {
+        async rewrites() {
+          return [
+            {
+              source: '/api/backend/:path*',
+              destination: 'https://vitalfood-backend.onrender.com/:path*',
+            },
+          ];
+        },
+      }),
+  images: { remotePatterns: imageHosts(), ...(isMobileBuild ? { unoptimized: true } : {}) },
 };
 export default nextConfig;

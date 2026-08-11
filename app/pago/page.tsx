@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CheckCircleIcon, ClockIcon, XCircleIcon, NoSymbolIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '@/contexts/AuthContext'
 import { paymentService } from '@/services'
@@ -28,12 +29,13 @@ type ViewState =
 
 const PAYMENT_POLL_MS = 3000
 
-export default function Page({ searchParams }: { searchParams: { status?: string; order?: string; payment?: string } }) {
+function PaymentPageContent() {
   const { ready, session } = useAuth()
   const [view, setView] = useState<ViewState>({ kind: 'checking' })
-  const paymentId = searchParams.payment
-  const orderId = searchParams.order
-  const requestedStatus = searchParams.status
+  const searchParams = useSearchParams()
+  const paymentId = searchParams.get('payment') ?? undefined
+  const orderId = searchParams.get('order') ?? undefined
+  const requestedStatus = searchParams.get('status') ?? undefined
 
   useEffect(() => {
     if (paymentService.isSimulated) {
@@ -112,6 +114,10 @@ export default function Page({ searchParams }: { searchParams: { status?: string
     retry={view.status === 'rejected'}
     simulated={view.simulated}
   />
+}
+
+export default function Page() {
+  return <Suspense fallback={<main className="min-h-screen bg-forest"/>}><PaymentPageContent/></Suspense>
 }
 
 function PaymentLayout({

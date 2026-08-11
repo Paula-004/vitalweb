@@ -11,6 +11,7 @@ import {
 import { useCatalogData } from "@/hooks/useCatalogData";
 import { useStoreConfig } from "@/hooks/useStoreConfig";
 import { DietaryTag, Product, WeekDay } from "@/types/domain";
+import { appRoutes } from "@/lib/platform/routes";
 import ProductImage from "./ProductImage";
 
 /** Fecha comercial `YYYY-MM-DD` en formato legible, ej. `Martes 14 de julio`. */
@@ -449,7 +450,7 @@ function ProductCard({
   const state = getAvailability(product);
   return (
     <Link
-      href={`/producto/${product.slug}`}
+      href={appRoutes.product(product.slug)}
       className="group overflow-hidden rounded-[1.75rem] bg-white shadow-soft hover:-translate-y-1"
     >
       <div className="relative">

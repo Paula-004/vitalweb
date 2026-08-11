@@ -12,6 +12,7 @@ import { useNotification } from "@/contexts/NotificationContext";
 import { useMonthlyMenu } from "@/hooks/useMonthlyMenu";
 import { recommendationService } from "@/services";
 import { Product } from "@/types/domain";
+import { appRoutes } from "@/lib/platform/routes";
 import ProductImage from "./ProductImage";
 
 const money = (value: number) => "$" + value.toLocaleString("es-AR");
@@ -298,7 +299,7 @@ export default function MenuOptions() {
                   <h4 className="text-lg font-extrabold uppercase text-forest">{product.name}</h4>
                   <p className="mt-2 text-sm font-extrabold text-orange">{money(product.promotionalPrice ?? product.price)}</p>
                   <p className="mt-3 text-xs leading-5 text-ink/65">{product.shortDescription}</p>
-                  <Link href={`/producto/${product.slug}`} className="mt-4 inline-block text-xs font-extrabold text-orange">
+                  <Link href={appRoutes.product(product.slug)} className="mt-4 inline-block text-xs font-extrabold text-orange">
                     Ver detalle
                   </Link>
                 </article>
