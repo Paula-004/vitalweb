@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ShoppingBagIcon,
   XMarkIcon,
@@ -10,6 +10,8 @@ import {
   ArrowRightIcon,
   MapPinIcon,
   ClockIcon,
+  ChevronDownIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import Logo from "./Logo";
 import ProductImage from "./ProductImage";
@@ -19,23 +21,78 @@ import { useStoreConfig } from "@/hooks/useStoreConfig";
 import MenuOptions from "./MenuOptions";
 const money = (n: number) => "$" + n.toLocaleString("es-AR");
 export default function Storefront() {
-  const { session } = useAuth();
+  const { session, logout } = useAuth();
   const cart = useCart();
   const { data: storeConfig } = useStoreConfig();
   const deadline = storeConfig?.orderDeadline;
   const [open, setOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const count = cart.count;
   const total = cart.subtotal;
+  useEffect(() => {
+    if (!accountOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) setAccountOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAccountOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [accountOpen]);
+
+  const closeSession = async () => {
+    setAccountOpen(false);
+    await logout();
+  };
   return (
     <main className="min-h-screen overflow-hidden">
-      <div className="absolute left-3 right-3 top-3 z-30 flex items-center justify-end gap-1.5 sm:left-auto sm:right-8 sm:top-5 sm:flex-col sm:gap-2">
+      <div className="absolute left-3 right-3 top-3 z-40 flex items-center justify-end gap-1.5 sm:left-auto sm:right-8 sm:top-5 sm:flex-col sm:gap-2">
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <Link
-            href={session ? "/mi-cuenta" : "/login"}
-            className="whitespace-nowrap rounded-full border border-forest/15 bg-white/95 px-3 py-2 text-[11px] font-bold text-forest shadow-soft backdrop-blur hover:bg-cream sm:px-4 sm:py-3 sm:text-sm"
-          >
-            {session ? `Hola, ${session.user.firstName}` : "Ingresar"}
-          </Link>
+          {session ? (
+            <div ref={accountMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setAccountOpen((value) => !value)}
+                aria-expanded={accountOpen}
+                aria-haspopup="menu"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-forest/15 bg-white/95 px-3 py-2 text-[11px] font-bold text-forest shadow-soft backdrop-blur hover:bg-cream sm:px-4 sm:py-3 sm:text-sm"
+              >
+                Hola, {session.user.firstName}
+                <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${accountOpen ? "rotate-180" : ""}`} />
+              </button>
+              {accountOpen && (
+                <div role="menu" className="absolute right-0 top-[calc(100%+.6rem)] z-50 w-56 overflow-hidden rounded-2xl border border-forest/10 bg-white p-2 text-sm text-forest shadow-2xl">
+                  {[
+                    ["/menu-hoy", "Menú diario"],
+                    ["/menu-semanal", "Menú semanal"],
+                    ["/promociones", "Promos"],
+                    ["/mi-cuenta", "Mi cuenta"],
+                  ].map(([href, label]) => (
+                    <Link key={href} href={href} role="menuitem" onClick={() => setAccountOpen(false)} className="block rounded-xl px-4 py-2.5 font-semibold hover:bg-cream">
+                      {label}
+                    </Link>
+                  ))}
+                  <div className="my-1 border-t border-forest/10" />
+                  <button type="button" role="menuitem" onClick={closeSession} className="flex w-full items-center gap-2 rounded-xl px-4 py-2.5 text-left font-bold text-orange hover:bg-orange/10">
+                    <ArrowRightOnRectangleIcon className="h-4 w-4" /> Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="whitespace-nowrap rounded-full border border-forest/15 bg-white/95 px-3 py-2 text-[11px] font-bold text-forest shadow-soft backdrop-blur hover:bg-cream sm:px-4 sm:py-3 sm:text-sm"
+            >
+              Ingresar
+            </Link>
+          )}
           {!session && (
             <Link
               href="/registro"
@@ -74,7 +131,7 @@ export default function Storefront() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#f7f1e9] via-[#f7f1e9]/90 to-transparent lg:via-[#f7f1e9]/40" />
         <div className="relative mx-auto flex min-h-[700px] max-w-7xl items-start px-5 pb-24 pt-28 sm:min-h-[760px] sm:items-center sm:pt-24 lg:px-8">
-          <div className="max-w-2xl">
+          <div className="max-w-2xl sm:translate-y-14 lg:translate-y-16">
             <span className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-[10px] font-extrabold uppercase tracking-[.12em] text-orange backdrop-blur sm:px-4 sm:text-xs sm:tracking-[.16em]">
               <span className="h-2 w-2 rounded-full bg-orange" /> Menú semanal
               disponible

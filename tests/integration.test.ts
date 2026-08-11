@@ -102,7 +102,10 @@ describe('cuenta del cliente', () => {
   it('el registro devuelve una sesión que el adaptador entiende', async ({ skip }) => {
     if (!reachable) return skip()
     const { data } = await post('/storefront/auth/register', {
+      firstName: 'Test',
+      lastName: 'Integración',
       username: `test-${Date.now()}`,
+      phone: `11 5555 ${String(Date.now()).slice(-4)}`,
       password: 'unaclave123',
       ...(sellerCode ? { sellerCode } : {}),
     })
@@ -110,7 +113,8 @@ describe('cuenta del cliente', () => {
     const session = data as { user: Record<string, unknown>; accessToken: string; expiresAt: string }
     const user = backofficeAdapter.user(session.user)
     expect(user.id).toBeTruthy()
-    expect(user.username).toBeTruthy()
+    expect(user.firstName).toBe('Test')
+    expect(user.phone).toBeTruthy()
     expect(session.accessToken).toBeTruthy()
     expect(new Date(session.expiresAt).getTime()).toBeGreaterThan(Date.now())
     // Ningún endpoint público puede devolver el hash de la contraseña.
@@ -123,8 +127,8 @@ describe('cuenta del cliente', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: `codigo-${Date.now()}`,
-        password: 'unaclave123', sellerCode: 'NO-EXISTE-JAMAS',
+        firstName: 'Test', lastName: 'Código', username: `test-codigo-${Date.now()}`,
+        phone: '11 5555 0001', password: 'unaclave123', sellerCode: 'NO-EXISTE-JAMAS',
       }),
     })
     expect(response.status).toBe(422)

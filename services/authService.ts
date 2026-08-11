@@ -53,30 +53,36 @@ export const authService = {
       return { ...response, data: toSession(response.data) }
     }
     const username = input.username.trim().toLowerCase()
-    const user = mockUsers.find(item => (item.username ?? item.firstName).toLowerCase() === username)
+    const user = mockUsers.find(item => item.username.toLowerCase() === username)
     if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Usuario o contraseña incorrectos.', 401)
     return mockResponse(session(user))
   },
 
   async register(input: RegisterInput) {
     if (useApiFor(apiEndpoints.customerRegister)) {
-      const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerRegister, {
+      const endpoint = input.invitationToken ? apiEndpoints.customerClaimInvitation : apiEndpoints.customerRegister
+      const response = await apiRequest<Record<string, unknown>>(endpoint, {
         method: 'POST',
         body: JSON.stringify({
+          ...(input.invitationToken ? { token: input.invitationToken } : {}),
           username: input.username,
+          fullName: `${input.firstName} ${input.lastName}`.trim(),
+          firstName: input.firstName,
+          lastName: input.lastName,
+          phone: input.phone,
           password: input.password,
           // Se omite si viene vacío: el backoffice rechaza un código inexistente,
           // pero acepta que no venga ninguno (venta directa).
-          ...(input.sellerCode?.trim() ? { sellerCode: input.sellerCode.trim() } : {}),
+          ...(!input.invitationToken && input.sellerCode?.trim() ? { sellerCode: input.sellerCode.trim() } : {}),
         }),
       })
       return { ...response, data: toSession(response.data) }
     }
     const username = input.username.trim().toLowerCase()
-    if (mockUsers.some(user => (user.username ?? user.firstName).toLowerCase() === username)) {
-      throw new DataSourceError('Ese nombre de usuario ya está en uso.', 409)
+    if (mockUsers.some(user => user.username.toLowerCase() === username)) {
+      throw new DataSourceError('Ese usuario ya está en uso.', 409)
     }
-    const user = { id: `user-mock-${Date.now()}`, username, firstName: username, lastName: '', phone: '', addresses: [], createdAt: new Date().toISOString() }
+    const user = { id: `user-mock-${Date.now()}`, firstName: input.firstName, lastName: input.lastName, username, phone: input.phone, addresses: [], createdAt: new Date().toISOString() }
     mockUsers.push(user)
     return mockResponse(session(user))
   },

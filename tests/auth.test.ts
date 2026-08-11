@@ -12,13 +12,13 @@ beforeEach(() => clearStorage())
 describe('login', () => {
   it('devuelve la sesión del cliente con credenciales válidas', async () => {
     const { data } = await authService.login({ username: DEMO_USERNAME, password: DEMO_PASSWORD })
-    expect(data.user.firstName).toBe('Marina')
+    expect(data.user.username).toBe(DEMO_USERNAME)
     expect(data.accessToken).toBeTruthy()
   })
 
   it('ignora mayúsculas en el usuario', async () => {
-    const { data } = await authService.login({ username: 'MARINA', password: DEMO_PASSWORD })
-    expect(data.user.firstName).toBe('Marina')
+    const { data } = await authService.login({ username: DEMO_USERNAME.toUpperCase(), password: DEMO_PASSWORD })
+    expect(data.user.username).toBe(DEMO_USERNAME)
   })
 
   it('rechaza una contraseña incorrecta con 401', async () => {
@@ -35,22 +35,21 @@ describe('login', () => {
 
 describe('registro', () => {
   it('crea la cuenta y deja al cliente con sesión iniciada', async () => {
-    const username = `ana${Date.now()}`
-    const { data } = await authService.register({ username, password: 'unaclave123' })
-    expect(data.user.username).toBe(username)
+    const { data } = await authService.register({ firstName: 'Ana', lastName: 'Pérez', username: `ana-${Date.now()}`, phone: '+54 11 4444 4444', password: 'unaclave123' })
+    expect(data.user.firstName).toBe('Ana')
     expect(data.user.addresses).toEqual([])
     expect(data.accessToken).toBeTruthy()
   })
 
   it('rechaza con 409 un usuario ya registrado', async () => {
-    await expect(authService.register({ username: DEMO_USERNAME, password: 'unaclave123' }))
+    await expect(authService.register({ firstName: 'Otra', lastName: 'Marina', username: DEMO_USERNAME, phone: '+54 11 4444 4444', password: 'unaclave123' }))
       .rejects.toMatchObject({ status: 409 })
   })
 })
 
 describe('sesión expirada', () => {
   const sessionWith = (expiresAt: string): AuthSession => ({
-    user: { id: 'user-demo-001', username: DEMO_USERNAME, firstName: 'Marina', lastName: 'Test', phone: '', addresses: [], createdAt: '2026-01-01T00:00:00Z' },
+    user: { id: 'user-demo-001', firstName: 'Marina', lastName: 'Test', username: DEMO_USERNAME, phone: '+54 9 11 5555 0101', addresses: [], createdAt: '2026-01-01T00:00:00Z' },
     accessToken: 'token-de-prueba',
     expiresAt,
   })

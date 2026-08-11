@@ -44,7 +44,7 @@ describe('adaptador del backoffice', () => {
   })
 
   it('separa nombre y apellido cuando sólo llega fullName', () => {
-    const user = backofficeAdapter.user({ id: 'u1', fullName: 'Marina Del Valle', email: 'm@v.demo' })
+    const user = backofficeAdapter.user({ id: 'u1', fullName: 'Marina Del Valle', username: 'marina' })
     expect(user.firstName).toBe('Marina')
     expect(user.lastName).toBe('Del Valle')
   })

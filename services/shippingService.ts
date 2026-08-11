@@ -1,6 +1,6 @@
 import { mockShippingZones, mockTimeSlots } from '@/mocks/commerce'
 import { apiRequest } from '@/lib/apiClient'
-import { apiEndpoints, buildQuery, useApiFor } from '@/lib/config'
+import { apiEndpoints, appConfig, buildQuery, useApiFor } from '@/lib/config'
 import { mockResponse } from '@/lib/mockApi'
 import { backofficeAdapter } from '@/adapters/backofficeAdapter'
 import { ShippingQuote, ShippingQuoteInput, ShippingZone, TimeSlot } from '@/types/domain'
@@ -19,6 +19,9 @@ function quoteFromZones(input: ShippingQuoteInput, zones: ShippingZone[], slots:
 }
 
 export const shippingService = {
+  /** La cotizacion solo es cobrable cuando proviene del backend. */
+  get isQuoteRemote() { return useApiFor(apiEndpoints.shippingQuote) },
+
   async getZones() {
     if (!useApiFor(apiEndpoints.shippingZones)) return mockResponse(mockShippingZones)
     const response = await apiRequest<unknown>(apiEndpoints.shippingZones)
@@ -50,6 +53,13 @@ export const shippingService = {
       return { ...response, data: quote }
     }
     const [zones, slots] = await Promise.all([this.getZones(), this.getTimeSlots({ date: input.date, zoneId: input.zoneId })])
-    return mockResponse(quoteFromZones(input, zones.data, slots.data, subtotal))
+    const localQuote = quoteFromZones(input, zones.data, slots.data, subtotal)
+    // En modo API un precio mock nunca debe formar parte de un cobro real. Hasta
+    // que exista shipping/quote, la entrega queda sin cargo y coincide con el total
+    // persistido por el backend.
+    if (appConfig.dataSource === 'api') {
+      return mockResponse({ ...localQuote, cost: 0, freeShipping: true })
+    }
+    return mockResponse(localQuote)
   },
 }

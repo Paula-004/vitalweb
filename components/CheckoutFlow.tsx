@@ -12,6 +12,8 @@ const labels = ['Identificación', 'Entrega', 'Dirección o retiro', 'Fecha y ho
 const money = (n: number) => '$' + n.toLocaleString('es-AR')
 const todayISO = () => new Date().toISOString().slice(0, 10)
 const PHONE_PATTERN = /^[\d\s+()-]{6,}$/
+const MERCADOPAGO_METHOD_ID = 'pay-mercadopago'
+const CHECKOUT_LOGIN_URL = `/login?next=${encodeURIComponent('/checkout')}`
 
 interface Guest { firstName: string; lastName: string; phone: string }
 const emptyGuest: Guest = { firstName: '', lastName: '', phone: '' }
@@ -59,11 +61,6 @@ export default function CheckoutFlow() {
     if (!session) return
     const initial = session.user.addresses.find(item => item.isDefault) ?? session.user.addresses[0]
     setAddressId(initial?.id ?? '')
-    setGuest(current => ({
-      firstName: current.firstName || session.user.firstName,
-      lastName: current.lastName || session.user.lastName,
-      phone: current.phone || session.user.phone,
-    }))
   }, [session])
 
   // El costo de envío y las franjas los define el backoffice, no el navegador.
@@ -129,11 +126,20 @@ export default function CheckoutFlow() {
   const goNext = () => {
     const message = stepError(step)
     setError(message)
-    if (!message) setStep(value => value + 1)
+    if (message) return
+    if (step === 4 && paymentId === MERCADOPAGO_METHOD_ID && !session) {
+      router.push(CHECKOUT_LOGIN_URL)
+      return
+    }
+    setStep(value => value + 1)
   }
 
   const confirm = async () => {
     if (loading) return
+    if (paymentId === MERCADOPAGO_METHOD_ID && !session) {
+      router.push(CHECKOUT_LOGIN_URL)
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -208,7 +214,7 @@ export default function CheckoutFlow() {
               {!session && <Field label="Apellido" value={guest.lastName} change={value => setGuest(old => ({ ...old, lastName: value }))} />}
               <Field label="Teléfono" value={guest.phone} change={value => setGuest(old => ({ ...old, phone: value }))} />
             </div>
-            {!session && <Link href="/login" className="mt-4 inline-block text-sm font-bold text-orange">Ingresar a mi cuenta</Link>}
+            {!session && <Link href={CHECKOUT_LOGIN_URL} className="mt-4 inline-block text-sm font-bold text-orange">Ingresar a mi cuenta</Link>}
           </div>}</Step>}
 
         {step === 1 && <Step title="Forma de entrega"><div className="grid gap-3 sm:grid-cols-2">

@@ -7,16 +7,24 @@ import { authService } from '@/services'
 
 type Mode = 'login' | 'register' | 'recover' | 'reset'
 
+const PHONE_PATTERN = /^[\d\s+()-]{6,}$/
 const MIN_PASSWORD = 8
 
+function getSafeNextPath(value: string | null): string {
+  return value?.startsWith('/') && !value.startsWith('//') ? value : '/mi-cuenta'
+}
+
 /** Validación previa al envío: evita viajes al backoffice por datos obviamente incompletos. */
-function validate(mode: Mode, values: Record<string, string>): string {
-  if ((mode === 'login' || mode === 'register') && (values.username?.trim().length ?? 0) < 3) return 'El nombre de usuario debe tener al menos 3 caracteres.'
-  if (mode === 'reset') {
+function validate(mode: Mode, values: Record<string, string>, invited = false): string {
+  if ((mode === 'login' || mode === 'register') && (values.username?.trim().length ?? 0) < 3) return 'El usuario debe tener al menos 3 caracteres.'
+  if (mode === 'register' && !invited) {
+    if (!values.firstName?.trim() || !values.lastName?.trim()) return 'Completá tu nombre y apellido.'
+    if (!PHONE_PATTERN.test(values.phone ?? '')) return 'Ingresá un teléfono de contacto válido.'
+  }
+  if (mode === 'register' || mode === 'reset') {
     if ((values.password ?? '').length < MIN_PASSWORD) return `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.`
     if (values.password !== values.passwordConfirm) return 'Las contraseñas no coinciden.'
   }
-  if (mode === 'register' && (values.password ?? '').length < MIN_PASSWORD) return `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.`
   if (mode === 'login' && !values.password) return 'Ingresá tu contraseña.'
   return ''
 }
@@ -29,17 +37,18 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const next = searchParams.get('next') || '/mi-cuenta'
+  const next = getSafeNextPath(searchParams.get('next'))
   const token = searchParams.get('token') ?? ''
   // Link de referido del vendedor: /registro?v=LUCI-CENTRO deja el código cargado.
   const sellerCode = (searchParams.get('v') ?? '').toUpperCase()
+  const invitationToken = searchParams.get('invite') ?? ''
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const raw = Object.fromEntries(new FormData(event.currentTarget))
     const values = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, String(value)]))
 
-    const invalid = validate(mode, values)
+    const invalid = validate(mode, values, Boolean(invitationToken))
     if (invalid) { setError(invalid); return }
 
     setLoading(true)
@@ -48,7 +57,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     try {
       if (mode === 'login') { await auth.login({ username: values.username, password: values.password }); router.push(next) }
       if (mode === 'register') {
-        await auth.register({ username: values.username, password: values.password, sellerCode })
+        await auth.register({ firstName: values.firstName ?? '', lastName: values.lastName ?? '', username: values.username, phone: values.phone ?? '', password: values.password, sellerCode: values.sellerCode, invitationToken })
         router.push(next)
       }
       if (mode === 'reset') {
@@ -80,7 +89,9 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
 
   if (mode === 'recover') {
     return <Shell title="Recuperá tu acceso">
-      <p className="mt-6 text-sm leading-6 text-ink/60">Escribinos por WhatsApp para recuperar tu cuenta. Te vamos a pedir tu número de teléfono para identificarte.</p>
+      <p className="mt-6 text-sm leading-6 text-ink/60">
+        Escribinos por WhatsApp para recuperar tu cuenta. Te vamos a pedir tu número de teléfono para identificarte.
+      </p>
       <Link href="/login" className="mt-5 inline-block rounded-full bg-orange px-5 py-3 text-sm font-bold text-white">Volver al ingreso</Link>
     </Shell>
   }
@@ -93,9 +104,24 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
       </div>
     )}
     <form onSubmit={submit} noValidate className="mt-6 space-y-4">
-      {mode !== 'reset' && <Field name="username" label="Nombre de usuario" autoComplete="username" defaultValue={mode === 'login' && authService.isMock ? 'marina' : ''} />}
+      {mode === 'register' && !invitationToken && <div className="grid grid-cols-2 gap-3">
+        <Field name="firstName" label="Nombre" autoComplete="given-name" />
+        <Field name="lastName" label="Apellido" autoComplete="family-name" />
+      </div>}
+      {mode !== 'reset' && <Field name="username" label="Usuario" autoComplete="username" defaultValue={mode === 'login' && authService.isMock ? 'marina' : ''} />}
+      {mode === 'register' && !invitationToken && <Field name="phone" label="Teléfono" type="tel" autoComplete="tel" />}
       <Field name="password" label="Contraseña" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} defaultValue={mode === 'login' && authService.isMock ? 'vital123' : ''} />
-      {mode === 'reset' && <Field name="passwordConfirm" label="Repetir contraseña" type="password" autoComplete="new-password" />}
+      {(mode === 'register' || mode === 'reset') && <Field name="passwordConfirm" label="Repetir contraseña" type="password" autoComplete="new-password" />}
+      {/* Quien llega por el link de un vendedor ya lo trae cargado; el resto lo
+          escribe o lo deja vacío (compra directa). */}
+      {mode === 'register' && !invitationToken && <Field
+        name="sellerCode"
+        label="Código de vendedor (opcional)"
+        optional
+        defaultValue={sellerCode}
+        autoComplete="off"
+        hint="Si te lo pasó un vendedor, escribilo acá para que tu pedido quede asociado a él."
+      />}
 
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-700">{error}</p>}
       {message && <p className="rounded-xl bg-green-50 p-3 text-xs font-bold text-green-700">{message}</p>}

@@ -19,10 +19,9 @@ export interface Address {
 
 export interface User {
   id: EntityId
-  username?: string
   firstName: string
   lastName: string
-  email?: string
+  username: string
   phone: string
   addresses: Address[]
   createdAt: string
@@ -255,7 +254,6 @@ export interface StoreConfig {
   timezone: string
   orderDeadline: string
   phone: string
-  email: string
   pickupEnabled: boolean
   deliveryEnabled: boolean
   minimumOrder: number

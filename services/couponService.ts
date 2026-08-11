@@ -1,6 +1,6 @@
 import { mockCoupons } from '@/mocks/commerce'
 import { apiRequest } from '@/lib/apiClient'
-import { apiEndpoints, useApiFor } from '@/lib/config'
+import { apiEndpoints, appConfig, useApiFor } from '@/lib/config'
 import { mockResponse } from '@/lib/mockApi'
 import { DataSourceError } from '@/types/api'
 import { backofficeAdapter } from '@/adapters/backofficeAdapter'
@@ -44,6 +44,12 @@ export const couponService = {
         message: String(data.message ?? `Cupón ${normalized} aplicado correctamente.`),
       }
       return { ...response, data: result }
+    }
+
+    // Un descuento de demostracion no puede modificar el importe visible cuando
+    // el pedido y el cobro se procesan contra la API real.
+    if (appConfig.dataSource === 'api') {
+      throw new DataSourceError('Los cupones no estan habilitados para pagos reales.', 503)
     }
 
     const coupon = mockCoupons.find(item => item.code === normalized && item.active)

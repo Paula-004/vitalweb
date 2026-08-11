@@ -24,6 +24,10 @@ pregunta por su endpoint con `useApiFor()`: si está configurado usa la API, y s
 responde con el mock correspondiente. Así se puede ir conectando capacidad por capacidad
 sin dejar pantallas rotas.
 
+Excepcion financiera: en modo API nunca se aplican tarifas de envio ni cupones mock a
+un cobro real. Sin `NEXT_PUBLIC_API_SHIPPING_QUOTE_ENDPOINT`, la entrega se informa sin
+cargo; sin `NEXT_PUBLIC_API_COUPONS_ENDPOINT`, los cupones permanecen deshabilitados.
+
 Para activar una capacidad alcanza con completar su variable en `.env.local`. La rama API
 ya está implementada en todos los servicios; no hay que tocar páginas ni componentes.
 

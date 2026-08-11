@@ -28,3 +28,5 @@ Thumbs.db
 
 # Deployment
 .vercel/
+.vercelignore
+.deploy-*/

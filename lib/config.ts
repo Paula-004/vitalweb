@@ -17,6 +17,7 @@ export const apiEndpoints = {
   // Autenticación y perfil
   customerLogin: process.env.NEXT_PUBLIC_API_CUSTOMER_LOGIN_ENDPOINT ?? '/storefront/auth/login',
   customerRegister: process.env.NEXT_PUBLIC_API_CUSTOMER_REGISTER_ENDPOINT ?? '/storefront/auth/register',
+  customerClaimInvitation: process.env.NEXT_PUBLIC_API_CUSTOMER_CLAIM_INVITATION_ENDPOINT ?? '/storefront/auth/claim-invitation',
   customerMe: process.env.NEXT_PUBLIC_API_CUSTOMER_ME_ENDPOINT ?? '/storefront/auth/me',
   passwordRecovery: process.env.NEXT_PUBLIC_API_PASSWORD_RECOVERY_ENDPOINT,
   passwordReset: process.env.NEXT_PUBLIC_API_PASSWORD_RESET_ENDPOINT,
@@ -31,7 +32,7 @@ export const apiEndpoints = {
   addresses: process.env.NEXT_PUBLIC_API_ADDRESSES_ENDPOINT ?? '/storefront/me/addresses',
   favorites: process.env.NEXT_PUBLIC_API_FAVORITES_ENDPOINT,
   // Entrega
-  shippingZones: process.env.NEXT_PUBLIC_API_SHIPPING_ZONES_ENDPOINT ?? process.env.NEXT_PUBLIC_API_SHIPPING_ENDPOINT,
+  shippingZones: process.env.NEXT_PUBLIC_API_SHIPPING_ZONES_ENDPOINT,
   shippingQuote: process.env.NEXT_PUBLIC_API_SHIPPING_QUOTE_ENDPOINT,
   timeSlots: process.env.NEXT_PUBLIC_API_TIME_SLOTS_ENDPOINT,
   // Pedidos
