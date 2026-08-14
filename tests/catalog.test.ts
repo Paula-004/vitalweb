@@ -15,6 +15,21 @@ const product = (overrides: Partial<Product> = {}): Product => ({
 const cart = (quantity = 1): Cart => ({ items: [{ productId: 'prod-1', quantity }], generalNotes: '' })
 
 describe('adaptador del backoffice', () => {
+  it('mapea una promo prepaga con período, cantidad y precio', () => {
+    const mapped = backofficeAdapter.promotion({
+      id: 7, name: 'Mensual 20', type: 'bundle', period: 'MONTH', mealCount: 20, price: 120000, active: true,
+    })
+    expect(mapped.period).toBe('MONTH')
+    expect(mapped.mealCount).toBe(20)
+    expect(mapped.price).toBe(120000)
+  })
+
+  it('conserva el descuento y el saldo de viandas devueltos por un pedido', () => {
+    const mapped = backofficeAdapter.order({ id: 'WEB-1', status: 'confirmed', mealCreditsUsed: 10, mealBalanceRemaining: 10 })
+    expect(mapped.mealCreditsUsed).toBe(10)
+    expect(mapped.mealBalanceRemaining).toBe(10)
+  })
+
   it('asume activo y disponible cuando el backoffice no envía esos campos', () => {
     const mapped = backofficeAdapter.product({ id: 'prod-1', name: 'Pollo', price: 8500 })
     expect(mapped.active).toBe(true)

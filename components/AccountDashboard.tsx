@@ -2,12 +2,12 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addressService, orderService } from "@/services";
+import { addressService, mealPlanService, orderService } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRequireSession } from "@/hooks/useRequireSession";
-import { Address, Order } from "@/types/domain";
-type Tab = "profile" | "addresses" | "orders";
+import { Address, MealBalanceSummary, Order } from "@/types/domain";
+type Tab = "profile" | "plans" | "addresses" | "orders";
 const statuses: Record<string, string> = {
   pending: "Pendiente",
   confirmed: "Confirmado",
@@ -29,7 +29,8 @@ export default function AccountDashboard() {
     [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [showAddress, setShowAddress] = useState(false);
+    [showAddress, setShowAddress] = useState(false),
+    [mealBalance, setMealBalance] = useState<MealBalanceSummary>({ totalRemaining: 0, balances: [] });
 
   const userId = session?.user.id;
   useEffect(() => {
@@ -40,6 +41,13 @@ export default function AccountDashboard() {
       .catch((cause) =>
         setError(cause instanceof Error ? cause.message : "No pudimos cargar tus pedidos."),
       );
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    mealPlanService.getMyBalance()
+      .then((response) => setMealBalance(response.data))
+      .catch(() => setMealBalance({ totalRemaining: 0, balances: [] }));
   }, [userId]);
 
   // Las direcciones viven en el backoffice: la sesión guardada puede estar desactualizada.
@@ -180,6 +188,7 @@ export default function AccountDashboard() {
         {(
           [
             ["profile", "Mis datos"],
+            ["plans", `Mis viandas (${mealBalance.totalRemaining})`],
             ["addresses", "Direcciones"],
             ["orders", "Mis pedidos"],
           ] as [Tab, string][]
@@ -270,6 +279,27 @@ export default function AccountDashboard() {
               </p>
             )}
           </div>
+        </div>
+      )}
+      {tab === "plans" && (
+        <div className="mt-6 max-w-3xl">
+          <div className="rounded-[2rem] bg-forest p-7 text-cream">
+            <p className="text-xs font-extrabold uppercase tracking-widest text-orange">Saldo disponible</p>
+            <p className="mt-2 font-display text-5xl">{mealBalance.totalRemaining}</p>
+            <p className="mt-1 text-sm text-cream/65">viandas a favor para elegir desde el menú</p>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {mealBalance.balances.map((balance) => (
+              <article key={balance.id} className="rounded-[2rem] bg-white p-6 shadow-soft">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-orange">{balance.planName}</p>
+                <p className="mt-3 text-3xl font-extrabold text-forest">{balance.remainingMeals} <span className="text-sm text-ink/50">de {balance.totalMeals}</span></p>
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-forest/10"><span className="block h-full rounded-full bg-orange" style={{ width: `${Math.max(0, Math.min(100, balance.remainingMeals / balance.totalMeals * 100))}%` }} /></div>
+                <p className="mt-3 text-xs text-ink/50">Válido hasta el {new Date(`${balance.endsAt}T00:00:00Z`).toLocaleDateString('es-AR', { timeZone: 'UTC' })}</p>
+              </article>
+            ))}
+            {!mealBalance.balances.length && <p className="rounded-2xl bg-white p-6 text-sm text-ink/60">No tenés un paquete vigente. Consultanos por las promos disponibles.</p>}
+          </div>
+          <Link href="/promociones" className="mt-5 inline-block rounded-full bg-orange px-5 py-3 text-sm font-bold text-white">Ver promos</Link>
         </div>
       )}
       {tab === "orders" && (
