@@ -17,7 +17,7 @@ export const apiEndpoints = {
   // Autenticación y perfil
   customerLogin: process.env.NEXT_PUBLIC_API_CUSTOMER_LOGIN_ENDPOINT ?? '/storefront/auth/login',
   customerRegister: process.env.NEXT_PUBLIC_API_CUSTOMER_REGISTER_ENDPOINT ?? '/storefront/auth/register',
-  customerClaimInvitation: process.env.NEXT_PUBLIC_API_CUSTOMER_CLAIM_INVITATION_ENDPOINT ?? '/storefront/auth/claim-invitation',
+  customerClaimInvitation: process.env.NEXT_PUBLIC_API_CUSTOMER_CLAIM_INVITATION_ENDPOINT,
   customerMe: process.env.NEXT_PUBLIC_API_CUSTOMER_ME_ENDPOINT ?? '/storefront/auth/me',
   passwordRecovery: process.env.NEXT_PUBLIC_API_PASSWORD_RECOVERY_ENDPOINT,
   passwordReset: process.env.NEXT_PUBLIC_API_PASSWORD_RESET_ENDPOINT,

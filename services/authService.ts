@@ -60,7 +60,10 @@ export const authService = {
 
   async register(input: RegisterInput) {
     if (useApiFor(apiEndpoints.customerRegister)) {
-      const endpoint = input.invitationToken ? apiEndpoints.customerClaimInvitation : apiEndpoints.customerRegister
+      if (input.invitationToken && !useApiFor(apiEndpoints.customerClaimInvitation)) {
+        throw new DataSourceError('El registro por invitacion todavia no esta disponible.', 503)
+      }
+      const endpoint = input.invitationToken ? apiEndpoints.customerClaimInvitation! : apiEndpoints.customerRegister
       const response = await apiRequest<Record<string, unknown>>(endpoint, {
         method: 'POST',
         body: JSON.stringify({

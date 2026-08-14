@@ -10,7 +10,8 @@ const mobilePublicEnv = {
   NEXT_PUBLIC_API_URL: 'https://vitalfood-backend.onrender.com',
   NEXT_PUBLIC_API_CUSTOMER_LOGIN_ENDPOINT: '/storefront/auth/login',
   NEXT_PUBLIC_API_CUSTOMER_REGISTER_ENDPOINT: '/storefront/auth/register',
-  NEXT_PUBLIC_API_CUSTOMER_CLAIM_INVITATION_ENDPOINT: '/storefront/auth/claim-invitation',
+  // El backend actual no publica todavia el canje de invitaciones.
+  NEXT_PUBLIC_API_CUSTOMER_CLAIM_INVITATION_ENDPOINT: '',
   NEXT_PUBLIC_API_CUSTOMER_ME_ENDPOINT: '/storefront/auth/me',
   NEXT_PUBLIC_API_PRODUCTS_ENDPOINT: '/storefront/products',
   NEXT_PUBLIC_API_CATEGORIES_ENDPOINT: '/storefront/categories',
@@ -19,9 +20,11 @@ const mobilePublicEnv = {
   NEXT_PUBLIC_API_ORDERS_ENDPOINT: '/storefront/orders',
   NEXT_PUBLIC_API_MY_ORDERS_ENDPOINT: '/storefront/me/orders',
   NEXT_PUBLIC_API_ADDRESSES_ENDPOINT: '/storefront/me/addresses',
-  NEXT_PUBLIC_API_PAYMENT_ENDPOINT: '/storefront/payment-methods',
-  NEXT_PUBLIC_API_PAYMENT_CREATE_ENDPOINT: '/storefront/payments',
-  NEXT_PUBLIC_API_PAYMENT_STATUS_ENDPOINT: '/storefront/payments',
+  // Mercado Pago queda preparado, pero deliberadamente desactivado hasta conectar
+  // la cuenta y los webhooks. Con estas rutas vacias el checkout usa pago simulado.
+  NEXT_PUBLIC_API_PAYMENT_ENDPOINT: '',
+  NEXT_PUBLIC_API_PAYMENT_CREATE_ENDPOINT: '',
+  NEXT_PUBLIC_API_PAYMENT_STATUS_ENDPOINT: '',
   NEXT_PUBLIC_IMAGE_HOSTS: [
     'pub-c30269c4a5be4d5ab539e30b367b28a9.r2.dev',
     'pub-3699625c408f439da84fc5553a80ad6c.r2.dev',
