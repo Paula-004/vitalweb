@@ -52,9 +52,9 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerLogin, { method: 'POST', body: JSON.stringify(input) })
       return { ...response, data: toSession(response.data) }
     }
-    const username = input.username.trim().toLowerCase()
-    const user = mockUsers.find(item => (item.username ?? item.firstName).toLowerCase() === username)
-    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Usuario o contraseña incorrectos.', 401)
+    const email = input.email.trim().toLowerCase()
+    const user = mockUsers.find(item => (item.email ?? '').toLowerCase() === email)
+    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Correo o contraseña incorrectos.', 401)
     return mockResponse(session(user))
   },
 
@@ -63,7 +63,9 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerRegister, {
         method: 'POST',
         body: JSON.stringify({
-          username: input.username,
+          fullName: input.fullName.trim(),
+          email: input.email.trim().toLowerCase(),
+          phone: input.phone.trim(),
           password: input.password,
           // Se omite si viene vacío: el backoffice rechaza un código inexistente,
           // pero acepta que no venga ninguno (venta directa).
@@ -72,11 +74,12 @@ export const authService = {
       })
       return { ...response, data: toSession(response.data) }
     }
-    const username = input.username.trim().toLowerCase()
-    if (mockUsers.some(user => (user.username ?? user.firstName).toLowerCase() === username)) {
-      throw new DataSourceError('Ese nombre de usuario ya está en uso.', 409)
+    const email = input.email.trim().toLowerCase()
+    if (mockUsers.some(user => (user.email ?? '').toLowerCase() === email)) {
+      throw new DataSourceError('Ya existe una cuenta con ese correo.', 409)
     }
-    const user = { id: `user-mock-${Date.now()}`, username, firstName: username, lastName: '', phone: '', addresses: [], createdAt: new Date().toISOString() }
+    const [firstName = '', ...rest] = input.fullName.trim().split(/\s+/).filter(Boolean)
+    const user = { id: `user-mock-${Date.now()}`, firstName, lastName: rest.join(' '), email, phone: input.phone.trim(), addresses: [], createdAt: new Date().toISOString() }
     mockUsers.push(user)
     return mockResponse(session(user))
   },

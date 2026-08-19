@@ -8,10 +8,16 @@ import { authService } from '@/services'
 type Mode = 'login' | 'register' | 'recover' | 'reset'
 
 const MIN_PASSWORD = 8
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MIN_PHONE_DIGITS = 8
 
 /** Validación previa al envío: evita viajes al backoffice por datos obviamente incompletos. */
 function validate(mode: Mode, values: Record<string, string>): string {
-  if ((mode === 'login' || mode === 'register') && (values.username?.trim().length ?? 0) < 3) return 'El nombre de usuario debe tener al menos 3 caracteres.'
+  if ((mode === 'login' || mode === 'register') && !EMAIL.test((values.email ?? '').trim())) return 'Ingresá un correo válido.'
+  if (mode === 'register') {
+    if ((values.fullName?.trim().length ?? 0) < 3) return 'Ingresá tu nombre y apellido.'
+    if ((values.phone ?? '').replace(/\D/g, '').length < MIN_PHONE_DIGITS) return 'Ingresá un teléfono de contacto válido.'
+  }
   if (mode === 'reset') {
     if ((values.password ?? '').length < MIN_PASSWORD) return `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.`
     if (values.password !== values.passwordConfirm) return 'Las contraseñas no coinciden.'
@@ -46,9 +52,15 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     setError('')
     setMessage('')
     try {
-      if (mode === 'login') { await auth.login({ username: values.username, password: values.password }); router.push(next) }
+      if (mode === 'login') { await auth.login({ email: values.email, password: values.password }); router.push(next) }
       if (mode === 'register') {
-        await auth.register({ username: values.username, password: values.password, sellerCode })
+        await auth.register({
+          fullName: values.fullName,
+          email: values.email,
+          phone: values.phone,
+          password: values.password,
+          sellerCode,
+        })
         router.push(next)
       }
       if (mode === 'reset') {
@@ -89,11 +101,13 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     {authService.isMock && (
       <div className="mt-5 rounded-xl bg-[#fff2d8] p-3 text-xs leading-5 text-[#6d4b12]">
         <b>Entorno de demostración.</b> Esta autenticación es simulada y no representa seguridad de producción.
-        {mode === 'login' && <> Usá <b>marina</b> y <b>vital123</b>.</>}
+        {mode === 'login' && <> Usá <b>marina@vital.demo</b> y <b>vital123</b>.</>}
       </div>
     )}
     <form onSubmit={submit} noValidate className="mt-6 space-y-4">
-      {mode !== 'reset' && <Field name="username" label="Nombre de usuario" autoComplete="username" defaultValue={mode === 'login' && authService.isMock ? 'marina' : ''} />}
+      {mode === 'register' && <Field name="fullName" label="Nombre y apellido" autoComplete="name" />}
+      {mode !== 'reset' && <Field name="email" label="Correo electrónico" type="email" autoComplete="email" defaultValue={mode === 'login' && authService.isMock ? 'marina@vital.demo' : ''} />}
+      {mode === 'register' && <Field name="phone" label="Teléfono" type="tel" autoComplete="tel" hint="Lo usamos para coordinar la entrega." />}
       <Field name="password" label="Contraseña" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} defaultValue={mode === 'login' && authService.isMock ? 'vital123' : ''} />
       {mode === 'reset' && <Field name="passwordConfirm" label="Repetir contraseña" type="password" autoComplete="new-password" />}
 
