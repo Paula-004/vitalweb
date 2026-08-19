@@ -27,6 +27,7 @@ function longDate(date: string) {
 type Mode = "all" | "today" | "weekly" | "promotions";
 type Sort =
   "featured" | "best" | "price-asc" | "price-desc" | "name" | "recent";
+/** Días con menú: la semana comercial es de lunes a sábado. */
 const days: WeekDay[] = [
   "lunes",
   "martes",
@@ -34,7 +35,6 @@ const days: WeekDay[] = [
   "jueves",
   "viernes",
   "sábado",
-  "domingo",
 ];
 const money = (value: number) => "$" + value.toLocaleString("es-AR");
 export default function CatalogBrowser({
@@ -403,7 +403,8 @@ function buildMonthWeeks(dates: string[]): MonthWeek[] {
   while (cursor <= last) {
     const start = new Date(cursor);
     const end = new Date(cursor);
-    end.setDate(end.getDate() + 6);
+    // Lunes + 5 = sábado: el domingo no entra en la semana comercial.
+    end.setDate(end.getDate() + 5);
     weeks.push({
       start,
       end,
@@ -495,10 +496,49 @@ function getAvailability(product: Product) {
   if (!product.available)
     return { label: product.availableDate ? "Próximo menú" : "No disponible" };
   if (product.stock === 0) return { label: "Agotado" };
-  if (!product.availableDays.includes("martes"))
+  // Los platos de otra fecha se pueden pedir igual: se aclara de qué día son en
+  // vez de marcarlos como no disponibles.
+  if (product.availableDate && product.availableDate !== todayKey())
+    return { label: `Menú del ${dayLabel(product.availableDate)}` };
+  // Sin fecha propia (catálogo de demostración) vale la restricción por día de
+  // la semana; vacía significa que el backoffice no restringe el plato.
+  if (
+    !product.availableDate &&
+    product.availableDays.length > 0 &&
+    !product.availableDays.includes(currentWeekDay())
+  )
     return { label: "No disponible hoy" };
   if (product.stock <= 5) return { label: "Pocas unidades" };
   return { label: "Disponible" };
+}
+
+/** Día comercial de hoy en Argentina, en formato `YYYY-MM-DD`. */
+function todayKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).formatToParts(new Date());
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+/** Día de la semana de hoy en Argentina, como lo nombra el backoffice. */
+function currentWeekDay(): WeekDay {
+  const [year, month, day] = todayKey().split("-").map(Number);
+  const index = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return days[(index + 6) % 7] ?? "domingo";
+}
+
+/** `jueves 21` para el cartel de los platos de otro día. */
+function dayLabel(date: string) {
+  return new Intl.DateTimeFormat("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00Z`));
 }
 function Badge({ label, orange = false }: { label: string; orange?: boolean }) {
   return (

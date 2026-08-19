@@ -73,6 +73,24 @@ describe('armado del calendario', () => {
     expect(weeks[0].days[0].label).toMatch(/^Martes 14$/)
   })
 
+  it('arma la semana de lunes a sábado y publica el menú del sábado', () => {
+    // 2026-08-22 es sábado: tiene que entrar en la semana y con sus platos.
+    const published = buildWeeks([menu('2026-08-22', ['prod-1'])], [product('prod-1')])
+    const weeks = fillCalendarWeeks(published, '2026-08-17')
+    const semana = weeks[0]
+
+    expect(semana.days.map(day => day.date)).toEqual([
+      '2026-08-17',
+      '2026-08-18',
+      '2026-08-19',
+      '2026-08-20',
+      '2026-08-21',
+      '2026-08-22',
+    ])
+    expect(semana.end).toBe('2026-08-22')
+    expect(semana.days[5].products.map(item => item.id)).toEqual(['prod-1'])
+  })
+
   it('completa semanas consecutivas y conserva los platos publicados', () => {
     const published = buildWeeks([menu('2026-08-17', ['prod-1'])], [product('prod-1')])
     const weeks = fillCalendarWeeks(published, '2026-07-28')
@@ -84,7 +102,7 @@ describe('armado del calendario', () => {
       '2026-08-17',
       '2026-08-24',
     ])
-    expect(weeks[3].label).toBe('17 al 23 de agosto')
+    expect(weeks[3].label).toBe('17 al 22 de agosto')
     expect(weeks[3].days[0].products.map(item => item.id)).toEqual(['prod-1'])
   })
 })
