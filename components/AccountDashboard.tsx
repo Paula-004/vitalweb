@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addressService, mealPlanService, orderService, shippingService } from "@/services";
+import { addressService, mealPlanService, orderService } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRequireSession } from "@/hooks/useRequireSession";
