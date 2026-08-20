@@ -58,7 +58,16 @@ export function buildWeeks(menus: DailyMenu[], products: Product[]): MenuWeek[] 
       label: format(menu.date, { weekday: 'long', day: 'numeric' }).replace(/^\w/, letter => letter.toUpperCase()),
       menu,
       products: menu.items
-        .map(item => products.find(product => product.id === item.productId))
+        .map(item => {
+          const product = products.find(candidate => candidate.id === item.productId)
+          if (!product || item.availableStock === undefined) return product
+          return {
+            ...product,
+            stock: item.availableStock,
+            stockManaged: true,
+            available: product.available && item.availableStock > 0,
+          }
+        })
         .filter((product): product is Product => Boolean(product) && product!.active),
     }
     const key = startOfWeek(menu.date)

@@ -56,6 +56,8 @@ export interface Product {
   dietaryTags: DietaryTag[]
   available: boolean
   stock: number
+  /** true cuando el backoffice administra un cupo real para este plato. */
+  stockManaged?: boolean
   availableDays: WeekDay[]
   availableDate?: string
   orderDeadline: string

@@ -246,7 +246,9 @@ export default function MenuOptions() {
                       ? `Pedidos cerrados · límite ${product.orderDeadline} hs`
                       : soldOut
                         ? "Agotado"
-                        : `Para ${day.label.toLowerCase()}`}
+                        : product.stockManaged
+                          ? `Quedan ${product.stock} vianda${product.stock === 1 ? "" : "s"}`
+                          : `Para ${day.label.toLowerCase()}`}
                   </span>
                   <div className="flex items-center gap-3 rounded-full bg-cream/70 p-1">
                     <button

@@ -105,4 +105,30 @@ describe('armado del calendario', () => {
     expect(weeks[3].label).toBe('17 al 22 de agosto')
     expect(weeks[3].days[0].products.map(item => item.id)).toEqual(['prod-1'])
   })
+
+  it('completa la semana comercial de lunes a sabado', () => {
+    const weeks = fillCalendarWeeks([], '2026-07-28', 1)
+
+    expect(weeks[0].days.map(day => day.date)).toEqual([
+      '2026-07-27',
+      '2026-07-28',
+      '2026-07-29',
+      '2026-07-30',
+      '2026-07-31',
+      '2026-08-01',
+    ])
+    expect(weeks[0].days[5].label).toMatch(/^Sábado 1$/)
+  })
+
+  it('usa el stock disponible informado por el menu diario', () => {
+    const saturday = menu('2026-08-01', ['prod-1'])
+    saturday.items[0].availableStock = 3
+    const weeks = buildWeeks([saturday], [product('prod-1', { stock: 10 })])
+
+    expect(weeks[0].days[0].products[0]).toMatchObject({
+      stock: 3,
+      stockManaged: true,
+      available: true,
+    })
+  })
 })

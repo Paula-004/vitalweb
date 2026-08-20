@@ -50,6 +50,7 @@ export const backofficeAdapter={
   dietaryTags:filterEnum(list(source,'dietaryTags','dietary_tags','etiquetas'),DIETARY_TAGS),
   available:flag(source,true,'available','disponible'),
   stock:value(source,'stock','stock_disponible')===undefined?ASSUMED_STOCK:number(source,'stock','stock_disponible'),
+  stockManaged:value(source,'stock','stock_disponible')!==undefined,
   availableDays:filterEnum(list(source,'availableDays','available_days','dias_disponibles'),WEEK_DAYS),
   availableDate:optionalText(source,'availableDate','available_date','fecha_disponibilidad'),
   orderDeadline:text(source,'orderDeadline','order_deadline','horario_limite'),

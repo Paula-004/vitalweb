@@ -35,6 +35,7 @@ describe('adaptador del backoffice', () => {
     expect(mapped.active).toBe(true)
     expect(mapped.available).toBe(true)
     expect(mapped.stock).toBeGreaterThan(0)
+    expect(mapped.stockManaged).toBe(false)
   })
 
   it('respeta los valores explícitos del backoffice', () => {
@@ -42,6 +43,7 @@ describe('adaptador del backoffice', () => {
     expect(mapped.active).toBe(false)
     expect(mapped.available).toBe(false)
     expect(mapped.stock).toBe(0)
+    expect(mapped.stockManaged).toBe(true)
   })
 
   it('acepta nombres alternativos en snake_case y español', () => {
