@@ -18,7 +18,7 @@ const catalogSections = [
   { title: "Postres", matches: (value: string) => /postre/.test(value) },
   { title: "Tus desayunos y meriendas", matches: (value: string) => /desayuno|merienda/.test(value) },
   { title: "Tartas congeladas", matches: (value: string) => /tarta/.test(value) && /congelad/.test(value) },
-  { title: "Otros", matches: (value: string) => /\botro|\botros/.test(value) },
+  { title: "Otros productos", matches: (value: string) => /\botro|\botros/.test(value) },
 ];
 
 type CatalogSection = { title: string; products: Product[] };
@@ -103,8 +103,7 @@ export default function MenuOptions() {
           !dailyProductSlugs.has(product.slug) &&
           !dailyProductNames.has(normalizedProductName(product)),
       ),
-    }))
-    .filter((section) => section.products.length > 0);
+    }));
 
   const keyOf = (date: string, productId: string) => `${date}|${productId}`;
 
@@ -394,7 +393,7 @@ function groupCatalog(products: Product[], categories: Map<string, Category>): C
     seenIds.add(product.id);
   }
 
-  return grouped.filter((section) => section.products.length > 0);
+  return grouped;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
