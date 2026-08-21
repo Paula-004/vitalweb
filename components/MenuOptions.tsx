@@ -22,6 +22,13 @@ const catalogSections = [
 
 type CatalogSection = { title: string; products: Product[] };
 
+const dailyMenuTypes = [
+  { label: "GENERAL", matches: (value: string) => /\bgeneral\b/.test(value) },
+  { label: "KETO", matches: (value: string) => /\bketo\b/.test(value) },
+  { label: "VEGGIE", matches: (value: string) => /veggie|vegetari/.test(value) },
+  { label: "PROTEICA", matches: (value: string) => /proteic/.test(value) },
+];
+
 export default function MenuOptions() {
   const cart = useCart();
   const { notify } = useNotification();
@@ -81,6 +88,7 @@ export default function MenuOptions() {
 
   const week = weeks[Math.min(weekIndex, weeks.length - 1)];
   const day = week.days[Math.min(dayIndex, week.days.length - 1)];
+  const dailyProducts = dailyMenuByType(day.products);
 
   const keyOf = (date: string, productId: string) => `${date}|${productId}`;
 
@@ -147,28 +155,28 @@ export default function MenuOptions() {
           </div>
         </div>
 
-        {!day.products.length && (
+        {!dailyProducts.length && (
           <p className="mt-10 rounded-2xl bg-white p-6 text-sm text-ink/60 shadow-soft">
             No hay platos publicados para {day.label.toLowerCase()}.
           </p>
         )}
 
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {day.products.map((product) => {
+          {dailyProducts.map(({ label, product }) => {
             const quantity = selections[keyOf(day.date, product.id)] ?? 0;
             const price = product.promotionalPrice ?? product.price;
             const soldOut = !product.available || product.stock < 1;
             const orderingClosed = !product.available && Boolean(product.orderDeadline);
             return (
               <article
-                key={product.id}
+                key={`${label}-${product.id}`}
                 className={`relative overflow-hidden rounded-[1.75rem] border bg-white p-6 text-left shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-forest/10"}`}
               >
                 <ProductImage src={product.imageUrl} alt={product.name} className="mb-4 aspect-square w-full rounded-2xl" sizes="(max-width: 768px) 100vw, 25vw" />
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">
-                      {product.badge ?? "General"}
+                      {label}
                     </p>
                     <h3 className="mt-2 text-xl font-extrabold uppercase text-forest">{product.name}</h3>
                   </div>
@@ -304,13 +312,47 @@ function normalizedCategory(category?: Category) {
     .toLowerCase();
 }
 
+function normalizedProduct(product: Product) {
+  return `${product.badge ?? ""} ${product.name}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function dailyMenuByType(products: Product[]) {
+  const uniqueProducts = products.filter(
+    (product, index, list) =>
+      list.findIndex((item) => item.id === product.id || item.slug === product.slug) === index,
+  );
+  const selected = new Set<string>();
+
+  return dailyMenuTypes.flatMap(({ label, matches }) => {
+    const product = uniqueProducts.find(
+      (item) => !selected.has(item.id) && matches(normalizedProduct(item)),
+    );
+    if (!product) return [];
+    selected.add(product.id);
+    return [{ label, product }];
+  });
+}
+
 function groupCatalog(products: Product[], categories: Map<string, Category>): CatalogSection[] {
-  return catalogSections
-    .map((section) => ({
-      title: section.title,
-      products: products.filter((product) => section.matches(normalizedCategory(categories.get(product.categoryId)))),
-    }))
-    .filter((section) => section.products.length > 0);
+  const grouped = catalogSections.map(({ title }) => ({ title, products: [] as Product[] }));
+  const seenIds = new Set<string>();
+  const seenSlugs = new Set<string>();
+
+  for (const product of products) {
+    if (seenIds.has(product.id) || seenSlugs.has(product.slug)) continue;
+    const sectionIndex = catalogSections.findIndex((section) =>
+      section.matches(normalizedCategory(categories.get(product.categoryId))),
+    );
+    if (sectionIndex < 0) continue;
+    grouped[sectionIndex].products.push(product);
+    seenIds.add(product.id);
+    seenSlugs.add(product.slug);
+  }
+
+  return grouped.filter((section) => section.products.length > 0);
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
