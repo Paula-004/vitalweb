@@ -38,14 +38,19 @@ export default function MenuOptions() {
   // Cantidad elegida por fecha y producto: permite armar varios días en una sola pasada.
   const [selections, setSelections] = useState<Record<string, number>>({});
   const [sections, setSections] = useState<CatalogSection[]>([]);
+  const [categories, setCategories] = useState<Map<string, Category>>(new Map());
 
   useEffect(() => {
     Promise.all([productService.getAll(), categoryService.getAll()])
       .then(([productResponse, categoryResponse]) => {
-        const categories = new Map(categoryResponse.data.map((category) => [category.id, category]));
-        setSections(groupCatalog(productResponse.data, categories));
+        const categoryMap = new Map(categoryResponse.data.map((category) => [category.id, category]));
+        setCategories(categoryMap);
+        setSections(groupCatalog(productResponse.data, categoryMap));
       })
-      .catch(() => setSections([]));
+      .catch(() => {
+        setCategories(new Map());
+        setSections([]);
+      });
   }, []);
 
   useEffect(() => {
@@ -88,7 +93,7 @@ export default function MenuOptions() {
 
   const week = weeks[Math.min(weekIndex, weeks.length - 1)];
   const day = week.days[Math.min(dayIndex, week.days.length - 1)];
-  const dailyProducts = dailyMenuByType(day.products);
+  const dailyProducts = dailyMenuByType(day.products, categories);
   const dailyProductIds = new Set(dailyProducts.map(({ product }) => product.id));
   const dailyProductSlugs = new Set(dailyProducts.map(({ product }) => product.slug));
   const dailyProductNames = new Set(dailyProducts.map(({ product }) => normalizedProductName(product)));
@@ -326,8 +331,8 @@ function normalizedCategory(category?: Category) {
     .toLowerCase();
 }
 
-function normalizedProduct(product: Product) {
-  return `${product.badge ?? ""} ${product.name}`
+function normalizedProduct(product: Product, category?: Category) {
+  return `${product.badge ?? ""} ${product.name} ${normalizedCategory(category)} ${product.dietaryTags.join(" ")}`
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
@@ -342,7 +347,7 @@ function normalizedProductName(product: Product) {
     .toLowerCase();
 }
 
-function dailyMenuByType(products: Product[]) {
+function dailyMenuByType(products: Product[], categories: Map<string, Category>) {
   const uniqueProducts = products.filter(
     (product, index, list) =>
       list.findIndex(
@@ -353,14 +358,30 @@ function dailyMenuByType(products: Product[]) {
       ) === index,
   );
   const selected = new Set<string>();
+  const byLabel = new Map<string, Product>();
 
-  return dailyMenuTypes.flatMap(({ label, matches }) => {
+  for (const { label, matches } of dailyMenuTypes) {
     const product = uniqueProducts.find(
-      (item) => !selected.has(item.id) && matches(normalizedProduct(item)),
+      (item) =>
+        !selected.has(item.id) &&
+        matches(normalizedProduct(item, categories.get(item.categoryId))),
     );
-    if (!product) return [];
+    if (!product) continue;
     selected.add(product.id);
-    return [{ label, product }];
+    byLabel.set(label, product);
+  }
+
+  const remaining = uniqueProducts.filter((product) => !selected.has(product.id));
+  for (const { label } of dailyMenuTypes) {
+    if (byLabel.has(label)) continue;
+    const product = remaining.shift();
+    if (!product) break;
+    byLabel.set(label, product);
+  }
+
+  return dailyMenuTypes.flatMap(({ label }) => {
+    const product = byLabel.get(label);
+    return product ? [{ label, product }] : [];
   });
 }
 
