@@ -75,31 +75,20 @@ export default function Storefront() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#f7f1e9] via-[#f7f1e9]/90 to-transparent lg:via-[#f7f1e9]/40" />
         <div className="relative mx-auto flex min-h-[700px] max-w-7xl items-start px-5 pb-24 pt-28 sm:min-h-[760px] sm:items-center sm:pt-24 lg:px-8">
           <div className="max-w-2xl">
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-[10px] font-extrabold uppercase tracking-[.12em] text-orange backdrop-blur sm:px-4 sm:text-xs sm:tracking-[.16em]">
-              <span className="h-2 w-2 rounded-full bg-orange" /> Menú semanal
-              disponible
-            </span>
             <h1 className="font-display text-[44px] font-semibold leading-[.98] tracking-tight text-forest sm:text-7xl lg:text-[86px]">
-              Comé rico.
+              La solución a
               <br />
-              <i className="font-normal text-orange">Viví liviano.</i>
+              <i className="font-normal text-orange">tus comidas.</i>
             </h1>
             <p className="mt-6 max-w-lg text-sm leading-6 text-ink/75 sm:mt-7 sm:text-lg sm:leading-7">
-              Viandas caseras, frescas y equilibradas. Nosotros cocinamos; vos
-              elegís cómo disfrutar tu día.
+              Diseñamos tu menú equilibrado y cocinamos cada día para vos.
             </p>
             <div className="mt-7 flex flex-wrap gap-3 sm:mt-9">
               <a
                 href="#menu"
-                className="flex items-center gap-2 rounded-full bg-orange px-5 py-3 text-xs font-extrabold text-white shadow-lg shadow-orange/20 hover:-translate-y-1 sm:gap-3 sm:px-6 sm:py-4 sm:text-sm"
+                className="flex items-center gap-3 rounded-full bg-orange px-7 py-4 text-sm font-extrabold text-white shadow-lg shadow-orange/20 hover:-translate-y-1 sm:px-9 sm:py-5 sm:text-base"
               >
                 Ver menú de hoy <ArrowRightIcon className="h-4 w-4" />
-              </a>
-              <a
-                href="#como"
-                className="rounded-full border border-forest/20 bg-white/70 px-5 py-3 text-xs font-extrabold text-forest backdrop-blur hover:bg-white sm:px-6 sm:py-4 sm:text-sm"
-              >
-                ¿Cómo funciona?
               </a>
             </div>
             <div className="mt-8 flex flex-col gap-2 text-[11px] font-bold text-forest/70 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-5 sm:text-xs">
