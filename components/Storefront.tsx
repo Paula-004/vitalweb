@@ -27,7 +27,7 @@ export default function Storefront() {
   const total = cart.subtotal;
   return (
     <main className="min-h-screen overflow-hidden">
-      <div className="absolute left-3 right-3 top-3 z-30 flex items-center justify-end gap-1.5 sm:left-auto sm:right-8 sm:top-5 sm:flex-col sm:gap-2">
+      <div className="absolute left-3 right-3 top-3 z-40 flex items-center justify-end gap-1.5 sm:left-auto sm:right-8 sm:top-5 sm:flex-col sm:gap-2">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <Link
             href={session ? "/mi-cuenta" : "/login"}
