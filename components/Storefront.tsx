@@ -8,7 +8,6 @@ import {
   MinusIcon,
   PlusIcon,
   ArrowRightIcon,
-  MapPinIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
 import Logo from "./Logo";
@@ -94,10 +93,7 @@ export default function Storefront() {
             <div className="mt-8 flex flex-col gap-2 text-[11px] font-bold text-forest/70 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-5 sm:text-xs">
               <span className="flex items-center gap-2">
                 <ClockIcon className="h-4 text-orange" />{" "}
-                {deadline ? `Pedí hasta las ${deadline}` : "Pedí con anticipación"}
-              </span>
-              <span className="flex items-center gap-2">
-                <MapPinIcon className="h-4 text-orange" /> Envíos en la zona
+                Sugerimos hacer tu pedido antes de las 11:00 hs. para viandas del día
               </span>
             </div>
           </div>

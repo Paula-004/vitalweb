@@ -2,8 +2,6 @@
 import Link from "next/link";
 import {
   CalendarDaysIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
@@ -137,48 +135,15 @@ export default function MenuOptions() {
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">{monthLabel}</p>
                 <h3 className="mt-1 font-display text-2xl font-semibold text-forest">
-                  Semana {weekIndex + 1} · {week.label}
+                  Semana actual · {week.label}
                 </h3>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                disabled={weekIndex === 0}
-                onClick={() => setWeekIndex(weekIndex - 1)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-forest/10 px-4 py-3 text-sm font-extrabold text-forest disabled:cursor-not-allowed disabled:opacity-35 sm:flex-none"
-              >
-                <ChevronLeftIcon className="h-4" /> Anterior
-              </button>
-              <button
-                disabled={weekIndex >= weeks.length - 1}
-                onClick={() => setWeekIndex(weekIndex + 1)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-orange px-5 py-3 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-35 sm:flex-none"
-              >
-                Siguiente <ChevronRightIcon className="h-4" />
-              </button>
-            </div>
           </div>
 
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {weeks.map((item, index) => (
-              <button
-                key={item.start}
-                onClick={() => setWeekIndex(index)}
-                aria-label={`Ver semana del ${item.label}`}
-                className={`rounded-2xl border px-4 py-3 text-left transition ${
-                  index === weekIndex
-                    ? "border-orange bg-orange text-white"
-                    : "border-forest/10 bg-cream text-forest hover:border-orange/40"
-                }`}
-              >
-                <span className="block text-xs font-extrabold">
-                  {isCurrentWeek(item.start) ? "Semana actual" : `Semana ${index + 1}`}
-                </span>
-                <span className={`mt-1 block text-xs ${index === weekIndex ? "text-white/75" : "text-ink/55"}`}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
+          <div className="mt-5 max-w-md rounded-2xl border border-orange bg-orange px-4 py-3 text-left text-white">
+            <span className="block text-xs font-extrabold">Semana actual</span>
+            <span className="mt-1 block text-xs text-white/75">{week.label}</span>
           </div>
 
           <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
@@ -334,11 +299,6 @@ function addCalendarDays(date: string, amount: number) {
   const value = new Date(`${date}T00:00:00.000Z`);
   value.setUTCDate(value.getUTCDate() + amount);
   return value.toISOString().slice(0, 10);
-}
-
-function isCurrentWeek(start: string) {
-  const today = currentDayKey();
-  return today >= start && today <= addCalendarDays(start, 6);
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
