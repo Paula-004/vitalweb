@@ -141,28 +141,30 @@ export default function Storefront() {
         </div>
       </section>
       <section id="nosotros" className="px-5 py-20 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 rounded-[2.5rem] bg-[#e7dccb] p-8 md:flex-row md:p-12">
-          <div>
-            <Link
-              href="/promociones"
-              className="mb-5 inline-flex rounded-full bg-orange px-5 py-3 text-sm font-extrabold text-white hover:bg-forest"
-            >
-              ¡Quiero mi promo!
-            </Link>
-            <h2 className="font-display text-3xl text-forest sm:text-4xl">
-              Comida creada por nutricionistas.
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">
-              Cocinamos en el día con ingredientes frescos, recetas simples y
-              ese toque casero que no se negocia.
-            </p>
-          </div>
-          <a
-            href="#menu"
-            className="whitespace-nowrap rounded-full bg-orange px-6 py-4 text-sm font-extrabold text-white"
+        <div className="mx-auto flex max-w-7xl flex-col gap-10 rounded-[2.5rem] bg-[#e7dccb] p-8 md:p-12">
+          <Link
+            href="/promociones"
+            className="mx-auto inline-flex rounded-full bg-orange px-8 py-4 text-base font-extrabold text-white shadow-lg shadow-orange/20 hover:bg-forest sm:text-lg"
           >
-            Armar mi pedido
-          </a>
+            ¡Quiero mi promo!
+          </Link>
+          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
+            <div>
+              <h2 className="font-display text-3xl text-forest sm:text-4xl">
+                Comida creada por nutricionistas.
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">
+                Cocinamos en el día con ingredientes frescos, recetas simples y
+                ese toque casero que no se negocia.
+              </p>
+            </div>
+            <a
+              href="#menu"
+              className="whitespace-nowrap rounded-full bg-orange px-6 py-4 text-sm font-extrabold text-white"
+            >
+              Armar mi pedido
+            </a>
+          </div>
         </div>
       </section>
       <footer className="bg-[#102b20] px-5 py-10 text-cream lg:px-8">
