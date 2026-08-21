@@ -89,6 +89,20 @@ export default function MenuOptions() {
   const week = weeks[Math.min(weekIndex, weeks.length - 1)];
   const day = week.days[Math.min(dayIndex, week.days.length - 1)];
   const dailyProducts = dailyMenuByType(day.products);
+  const dailyProductIds = new Set(dailyProducts.map(({ product }) => product.id));
+  const dailyProductSlugs = new Set(dailyProducts.map(({ product }) => product.slug));
+  const dailyProductNames = new Set(dailyProducts.map(({ product }) => normalizedProductName(product)));
+  const visibleSections = sections
+    .map((section) => ({
+      ...section,
+      products: section.products.filter(
+        (product) =>
+          !dailyProductIds.has(product.id) &&
+          !dailyProductSlugs.has(product.slug) &&
+          !dailyProductNames.has(normalizedProductName(product)),
+      ),
+    }))
+    .filter((section) => section.products.length > 0);
 
   const keyOf = (date: string, productId: string) => `${date}|${productId}`;
 
@@ -259,7 +273,7 @@ export default function MenuOptions() {
           </Link>
         </div>
 
-        {sections.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.title} className="mt-14">
             <h3 className="font-display text-3xl text-forest">{section.title}</h3>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -319,10 +333,24 @@ function normalizedProduct(product: Product) {
     .toLowerCase();
 }
 
+function normalizedProductName(product: Product) {
+  return product.name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 function dailyMenuByType(products: Product[]) {
   const uniqueProducts = products.filter(
     (product, index, list) =>
-      list.findIndex((item) => item.id === product.id || item.slug === product.slug) === index,
+      list.findIndex(
+        (item) =>
+          item.id === product.id ||
+          item.slug === product.slug ||
+          normalizedProductName(item) === normalizedProductName(product),
+      ) === index,
   );
   const selected = new Set<string>();
 
@@ -340,9 +368,11 @@ function groupCatalog(products: Product[], categories: Map<string, Category>): C
   const grouped = catalogSections.map(({ title }) => ({ title, products: [] as Product[] }));
   const seenIds = new Set<string>();
   const seenSlugs = new Set<string>();
+  const seenNames = new Set<string>();
 
   for (const product of products) {
-    if (seenIds.has(product.id) || seenSlugs.has(product.slug)) continue;
+    const normalizedName = normalizedProductName(product);
+    if (seenIds.has(product.id) || seenSlugs.has(product.slug) || seenNames.has(normalizedName)) continue;
     const sectionIndex = catalogSections.findIndex((section) =>
       section.matches(normalizedCategory(categories.get(product.categoryId))),
     );
@@ -350,6 +380,7 @@ function groupCatalog(products: Product[], categories: Map<string, Category>): C
     grouped[sectionIndex].products.push(product);
     seenIds.add(product.id);
     seenSlugs.add(product.slug);
+    seenNames.add(normalizedName);
   }
 
   return grouped.filter((section) => section.products.length > 0);
