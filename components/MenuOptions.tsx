@@ -347,6 +347,12 @@ function normalizedProductName(product: Product) {
     .toLowerCase();
 }
 
+function isDailyMenuProduct(product: Product, category?: Category) {
+  const name = normalizedProductName(product);
+  const categoryName = normalizedCategory(category);
+  return /^menu\b/.test(name) || /\bmenu\b|\bmenus\b|\bvianda\b|\bviandas\b/.test(categoryName);
+}
+
 function dailyMenuByType(products: Product[], categories: Map<string, Category>) {
   const uniqueProducts = products.filter(
     (product, index, list) =>
@@ -356,7 +362,7 @@ function dailyMenuByType(products: Product[], categories: Map<string, Category>)
           item.slug === product.slug ||
           normalizedProductName(item) === normalizedProductName(product),
       ) === index,
-  );
+  ).filter((product) => isDailyMenuProduct(product, categories.get(product.categoryId)));
   const selected = new Set<string>();
   const byLabel = new Map<string, Product>();
 
