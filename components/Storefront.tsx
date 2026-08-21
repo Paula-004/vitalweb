@@ -141,14 +141,14 @@ export default function Storefront() {
         </div>
       </section>
       <section id="nosotros" className="px-5 py-20 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-10 rounded-[2.5rem] bg-[#e7dccb] p-8 md:p-12">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-12">
           <Link
             href="/promociones"
-            className="mx-auto inline-flex rounded-full bg-orange px-8 py-4 text-base font-extrabold text-white shadow-lg shadow-orange/20 hover:bg-forest sm:text-lg"
+            className="inline-flex rounded-full bg-orange px-12 py-5 text-lg font-extrabold text-white shadow-xl shadow-orange/25 hover:bg-forest sm:px-16 sm:py-6 sm:text-xl"
           >
             ¡Quiero mi promo!
           </Link>
-          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
+          <div className="flex w-full flex-col items-center justify-between gap-8 rounded-[2.5rem] bg-[#e7dccb] p-8 md:flex-row md:p-12">
             <div>
               <h2 className="font-display text-3xl text-forest sm:text-4xl">
                 Comida creada por nutricionistas.
