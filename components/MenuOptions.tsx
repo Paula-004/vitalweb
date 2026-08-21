@@ -1,9 +1,6 @@
 "use client";
 import Link from "next/link";
-import {
-  CalendarDaysIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/outline";
+import { SparklesIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useNotification } from "@/contexts/NotificationContext";
@@ -71,9 +68,6 @@ export default function MenuOptions() {
 
   const week = weeks[Math.min(weekIndex, weeks.length - 1)];
   const day = week.days[Math.min(dayIndex, week.days.length - 1)];
-  const monthLabel = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric", timeZone: "UTC" })
-    .format(new Date(`${week.start}T00:00:00Z`))
-    .replace(/^\w/, (letter) => letter.toUpperCase());
 
   const keyOf = (date: string, productId: string) => `${date}|${productId}`;
 
@@ -127,26 +121,7 @@ export default function MenuOptions() {
         </div>
 
         <div className="mt-8 rounded-[1.75rem] bg-white p-5 shadow-soft sm:p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-orange/10 text-orange">
-                <CalendarDaysIcon className="h-6" />
-              </span>
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">{monthLabel}</p>
-                <h3 className="mt-1 font-display text-2xl font-semibold text-forest">
-                  Semana actual · {week.label}
-                </h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 max-w-md rounded-2xl border border-orange bg-orange px-4 py-3 text-left text-white">
-            <span className="block text-xs font-extrabold">Semana actual</span>
-            <span className="mt-1 block text-xs text-white/75">{week.label}</span>
-          </div>
-
-          <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {week.days.map((item, index) => (
               <button
                 key={item.date}
