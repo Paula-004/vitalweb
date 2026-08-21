@@ -169,6 +169,9 @@ export default function Storefront() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
           <Logo light />
           <div className="flex flex-col items-center gap-2 text-xs text-cream/65 sm:items-end">
+            <p className="text-cream/50">
+              © 2026 Vital Food Viandas · Hecho con sabor
+            </p>
             <a
               href="https://www.google.com/maps/search/?api=1&query=Neyra+144%2C+Gualeguaychu%2C+Entre+Rios"
               target="_blank"
