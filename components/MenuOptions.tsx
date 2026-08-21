@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useMonthlyMenu } from "@/hooks/useMonthlyMenu";
-import { categoryService, productService } from "@/services";
+import { categoryService } from "@/services";
 import { Category, Product } from "@/types/domain";
 import ProductImage from "./ProductImage";
 
@@ -18,6 +18,7 @@ const catalogSections = [
   { title: "Postres", matches: (value: string) => /postre/.test(value) },
   { title: "Tus desayunos y meriendas", matches: (value: string) => /desayuno|merienda/.test(value) },
   { title: "Tartas congeladas", matches: (value: string) => /tarta/.test(value) && /congelad/.test(value) },
+  { title: "Otros", matches: (value: string) => /\botro|\botros/.test(value) },
 ];
 
 type CatalogSection = { title: string; products: Product[] };
@@ -37,20 +38,15 @@ export default function MenuOptions() {
   const [dayIndex, setDayIndex] = useState(0);
   // Cantidad elegida por fecha y producto: permite armar varios días en una sola pasada.
   const [selections, setSelections] = useState<Record<string, number>>({});
-  const [sections, setSections] = useState<CatalogSection[]>([]);
   const [categories, setCategories] = useState<Map<string, Category>>(new Map());
 
   useEffect(() => {
-    Promise.all([productService.getAll(), categoryService.getAll()])
-      .then(([productResponse, categoryResponse]) => {
-        const categoryMap = new Map(categoryResponse.data.map((category) => [category.id, category]));
+    categoryService.getAll()
+      .then((response) => {
+        const categoryMap = new Map(response.data.map((category) => [category.id, category]));
         setCategories(categoryMap);
-        setSections(groupCatalog(productResponse.data, categoryMap));
       })
-      .catch(() => {
-        setCategories(new Map());
-        setSections([]);
-      });
+      .catch(() => setCategories(new Map()));
   }, []);
 
   useEffect(() => {
@@ -94,6 +90,7 @@ export default function MenuOptions() {
   const week = weeks[Math.min(weekIndex, weeks.length - 1)];
   const day = week.days[Math.min(dayIndex, week.days.length - 1)];
   const dailyProducts = dailyMenuByType(day.products, categories);
+  const sections = groupCatalog(day.products, categories);
   const dailyProductIds = new Set(dailyProducts.map(({ product }) => product.id));
   const dailyProductSlugs = new Set(dailyProducts.map(({ product }) => product.slug));
   const dailyProductNames = new Set(dailyProducts.map(({ product }) => normalizedProductName(product)));
@@ -377,14 +374,6 @@ function dailyMenuByType(products: Product[], categories: Map<string, Category>)
     byLabel.set(label, product);
   }
 
-  const remaining = uniqueProducts.filter((product) => !selected.has(product.id));
-  for (const { label } of dailyMenuTypes) {
-    if (byLabel.has(label)) continue;
-    const product = remaining.shift();
-    if (!product) break;
-    byLabel.set(label, product);
-  }
-
   return dailyMenuTypes.flatMap(({ label }) => {
     const product = byLabel.get(label);
     return product ? [{ label, product }] : [];
@@ -394,20 +383,15 @@ function dailyMenuByType(products: Product[], categories: Map<string, Category>)
 function groupCatalog(products: Product[], categories: Map<string, Category>): CatalogSection[] {
   const grouped = catalogSections.map(({ title }) => ({ title, products: [] as Product[] }));
   const seenIds = new Set<string>();
-  const seenSlugs = new Set<string>();
-  const seenNames = new Set<string>();
 
   for (const product of products) {
-    const normalizedName = normalizedProductName(product);
-    if (seenIds.has(product.id) || seenSlugs.has(product.slug) || seenNames.has(normalizedName)) continue;
+    if (seenIds.has(product.id)) continue;
     const sectionIndex = catalogSections.findIndex((section) =>
       section.matches(normalizedCategory(categories.get(product.categoryId))),
     );
     if (sectionIndex < 0) continue;
     grouped[sectionIndex].products.push(product);
     seenIds.add(product.id);
-    seenSlugs.add(product.slug);
-    seenNames.add(normalizedName);
   }
 
   return grouped.filter((section) => section.products.length > 0);
