@@ -364,7 +364,7 @@ function dailyMenuByType(products: Product[], categories: Map<string, Category>)
   const byLabel = new Map<string, Product>();
 
   for (const { label, matches } of dailyMenuTypes) {
-    const product = uniqueProducts.find(
+    const product = [...uniqueProducts].reverse().find(
       (item) =>
         !selected.has(item.id) &&
         matches(normalizedProduct(item, categories.get(item.categoryId))),
