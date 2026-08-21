@@ -143,8 +143,14 @@ export default function Storefront() {
       <section id="nosotros" className="px-5 py-20 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 rounded-[2.5rem] bg-[#e7dccb] p-8 md:flex-row md:p-12">
           <div>
+            <Link
+              href="/promociones"
+              className="mb-5 inline-flex rounded-full bg-orange px-5 py-3 text-sm font-extrabold text-white hover:bg-forest"
+            >
+              ¡Quiero mi promo!
+            </Link>
             <h2 className="font-display text-3xl text-forest sm:text-4xl">
-              Comida de verdad, todos los días.
+              Comida creada por nutricionistas.
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">
               Cocinamos en el día con ingredientes frescos, recetas simples y
@@ -162,9 +168,24 @@ export default function Storefront() {
       <footer className="bg-[#102b20] px-5 py-10 text-cream lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
           <Logo light />
-          <p className="text-xs text-cream/50">
-            © 2026 Vital Food Viandas · Hecho con sabor
-          </p>
+          <div className="flex flex-col items-center gap-2 text-xs text-cream/65 sm:items-end">
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Neyra+144%2C+Gualeguaychu%2C+Entre+Rios"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-orange"
+            >
+              Ubicación: Neyra 144, Gualeguaychú
+            </a>
+            <a
+              href="https://wa.me/5493446205554"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-orange"
+            >
+              WhatsApp: 3446205554
+            </a>
+          </div>
         </div>
       </footer>
       {open && (
