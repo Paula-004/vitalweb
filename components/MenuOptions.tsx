@@ -8,6 +8,7 @@ import { useMonthlyMenu } from "@/hooks/useMonthlyMenu";
 import { categoryService } from "@/services";
 import { Category, Product } from "@/types/domain";
 import ProductImage from "./ProductImage";
+import FavoriteButton from "./FavoriteButton";
 
 const money = (value: number) => "$" + value.toLocaleString("es-AR");
 
@@ -187,6 +188,7 @@ export default function MenuOptions() {
                 key={`${label}-${product.id}`}
                 className={`relative overflow-hidden rounded-[1.75rem] border bg-white p-6 text-left shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-forest/10"}`}
               >
+                <FavoriteButton productId={product.id} className="absolute right-9 top-9 z-10 h-11 w-11" />
                 <ProductImage src={product.imageUrl} alt={product.name} className="mb-4 aspect-square w-full rounded-2xl" sizes="(max-width: 768px) 100vw, 25vw" />
                 <div className="flex items-start justify-between">
                   <div>
@@ -279,7 +281,8 @@ export default function MenuOptions() {
             <h3 className="font-display text-3xl text-forest">{section.title}</h3>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {section.products.map((product) => (
-                <article key={product.id} className="overflow-hidden rounded-2xl bg-white p-5 shadow-soft">
+                <article key={product.id} className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-soft">
+                  <FavoriteButton productId={product.id} className="absolute right-8 top-8 z-10 h-10 w-10" />
                   <ProductImage
                     src={product.imageUrl}
                     alt={product.name}

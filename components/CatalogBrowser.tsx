@@ -12,6 +12,7 @@ import { useCatalogData } from "@/hooks/useCatalogData";
 import { useStoreConfig } from "@/hooks/useStoreConfig";
 import { DietaryTag, Product, WeekDay } from "@/types/domain";
 import ProductImage from "./ProductImage";
+import FavoriteButton from "./FavoriteButton";
 
 /** Fecha comercial `YYYY-MM-DD` en formato legible, ej. `Martes 14 de julio`. */
 function longDate(date: string) {
@@ -449,10 +450,9 @@ function ProductCard({
 }) {
   const state = getAvailability(product);
   return (
-    <Link
-      href={`/producto/${product.slug}`}
-      className="group overflow-hidden rounded-[1.75rem] bg-white shadow-soft hover:-translate-y-1"
-    >
+    <article className="group relative overflow-hidden rounded-[1.75rem] bg-white shadow-soft hover:-translate-y-1">
+      <FavoriteButton productId={product.id} className="absolute right-3 top-3 z-20 h-11 w-11" />
+      <Link href={`/producto/${product.slug}`} className="block">
       <div className="relative">
         <ProductImage
           src={product.imageUrl}
@@ -489,7 +489,8 @@ function ProductCard({
           )}
         </div>
       </div>
-    </Link>
+      </Link>
+    </article>
   );
 }
 function getAvailability(product: Product) {

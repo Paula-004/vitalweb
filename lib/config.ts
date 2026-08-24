@@ -29,7 +29,7 @@ export const apiEndpoints = {
   recommendations: process.env.NEXT_PUBLIC_API_RECOMMENDATIONS_ENDPOINT,
   // Datos del cliente
   addresses: process.env.NEXT_PUBLIC_API_ADDRESSES_ENDPOINT ?? '/storefront/me/addresses',
-  favorites: process.env.NEXT_PUBLIC_API_FAVORITES_ENDPOINT,
+  favorites: process.env.NEXT_PUBLIC_API_FAVORITES_ENDPOINT || '/storefront/me/favorites',
   // Entrega
   shippingZones: process.env.NEXT_PUBLIC_API_SHIPPING_ZONES_ENDPOINT ?? process.env.NEXT_PUBLIC_API_SHIPPING_ENDPOINT,
   shippingQuote: process.env.NEXT_PUBLIC_API_SHIPPING_QUOTE_ENDPOINT,
