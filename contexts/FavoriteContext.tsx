@@ -34,11 +34,18 @@ export function FavoriteProvider({ children }: { children: ReactNode }) {
 
   const toggle = useCallback((productId: string) => {
     const wasFavorite = ids.includes(productId)
-    setIds(current => favoriteService.toggle(current, productId)) // respuesta inmediata
+    const next = favoriteService.toggle(ids, productId)
+    setIds(next) // respuesta inmediata
     const request = wasFavorite ? favoriteService.remove(productId, remote) : favoriteService.add(productId, remote)
     request
       .then(next => setIds(next))
-      .catch(() => setIds(current => favoriteService.toggle(current, productId))) // se revierte si falla
+      .catch(() => {
+        // Si el backoffice esta temporalmente caido o aun no publico la ruta, se
+        // conserva la eleccion en este navegador. En el proximo login/sync se
+        // fusiona con la cuenta sin perder lo que el cliente marco.
+        favoriteService.saveLocal(next)
+        setIds(next)
+      })
   }, [ids, remote])
 
   const value = useMemo(() => ({ ids, loading, toggle, has: (id: string) => ids.includes(id) }), [ids, loading, toggle])
