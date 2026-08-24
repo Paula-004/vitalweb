@@ -21,7 +21,8 @@ export interface User {
   id: EntityId
   firstName: string
   lastName: string
-  username: string
+  username?: string
+  email?: string
   phone: string
   addresses: Address[]
   createdAt: string
@@ -55,6 +56,8 @@ export interface Product {
   dietaryTags: DietaryTag[]
   available: boolean
   stock: number
+  /** true cuando el backoffice administra un cupo real para este plato. */
+  stockManaged?: boolean
   availableDays: WeekDay[]
   availableDate?: string
   orderDeadline: string

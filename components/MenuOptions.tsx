@@ -1,21 +1,36 @@
 "use client";
 import Link from "next/link";
-import {
-  CalendarDaysIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/outline";
+import { SparklesIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { useMonthlyMenu } from "@/hooks/useMonthlyMenu";
-import { recommendationService } from "@/services";
-import { Product } from "@/types/domain";
+import { categoryService } from "@/services";
+import { Category, Product } from "@/types/domain";
 import { appRoutes } from "@/lib/platform/routes";
 import ProductImage from "./ProductImage";
+import FavoriteButton from "./FavoriteButton";
 
 const money = (value: number) => "$" + value.toLocaleString("es-AR");
+
+const catalogSections = [
+  { title: "Tartas frescas", matches: (value: string) => /tarta/.test(value) && !/congelad/.test(value) },
+  { title: "Tu bowl", matches: (value: string) => /bowl|ensalada/.test(value) },
+  { title: "Pastas", matches: (value: string) => /pasta/.test(value) },
+  { title: "Postres", matches: (value: string) => /postre/.test(value) },
+  { title: "Tus desayunos y meriendas", matches: (value: string) => /desayuno|merienda/.test(value) },
+  { title: "Tartas congeladas", matches: (value: string) => /tarta/.test(value) && /congelad/.test(value) },
+  { title: "Otros productos", matches: (value: string) => /\botro|\botros/.test(value) },
+];
+
+type CatalogSection = { title: string; products: Product[] };
+
+const dailyMenuTypes = [
+  { label: "GENERAL", matches: (value: string) => /\bgeneral\b/.test(value) },
+  { label: "KETO", matches: (value: string) => /\bketo\b/.test(value) },
+  { label: "VEGGIE", matches: (value: string) => /veggie|vegetari/.test(value) },
+  { label: "PROTEICA", matches: (value: string) => /proteic/.test(value) },
+];
 
 export default function MenuOptions() {
   const cart = useCart();
@@ -25,13 +40,15 @@ export default function MenuOptions() {
   const [dayIndex, setDayIndex] = useState(0);
   // Cantidad elegida por fecha y producto: permite armar varios días en una sola pasada.
   const [selections, setSelections] = useState<Record<string, number>>({});
-  const [extras, setExtras] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Map<string, Category>>(new Map());
 
   useEffect(() => {
-    recommendationService
-      .getSides()
-      .then((response) => setExtras(response.data))
-      .catch(() => setExtras([]));
+    categoryService.getAll()
+      .then((response) => {
+        const categoryMap = new Map(response.data.map((category) => [category.id, category]));
+        setCategories(categoryMap);
+      })
+      .catch(() => setCategories(new Map()));
   }, []);
 
   useEffect(() => {
@@ -74,9 +91,21 @@ export default function MenuOptions() {
 
   const week = weeks[Math.min(weekIndex, weeks.length - 1)];
   const day = week.days[Math.min(dayIndex, week.days.length - 1)];
-  const monthLabel = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric", timeZone: "UTC" })
-    .format(new Date(`${week.start}T00:00:00Z`))
-    .replace(/^\w/, (letter) => letter.toUpperCase());
+  const dailyProducts = dailyMenuByType(day.products, categories);
+  const sections = groupCatalog(day.products, categories);
+  const dailyProductIds = new Set(dailyProducts.map(({ product }) => product.id));
+  const dailyProductSlugs = new Set(dailyProducts.map(({ product }) => product.slug));
+  const dailyProductNames = new Set(dailyProducts.map(({ product }) => normalizedProductName(product)));
+  const visibleSections = sections
+    .map((section) => ({
+      ...section,
+      products: section.products.filter(
+        (product) =>
+          !dailyProductIds.has(product.id) &&
+          !dailyProductSlugs.has(product.slug) &&
+          !dailyProductNames.has(normalizedProductName(product)),
+      ),
+    }));
 
   const keyOf = (date: string, productId: string) => `${date}|${productId}`;
 
@@ -123,66 +152,14 @@ export default function MenuOptions() {
       <div className="mx-auto max-w-7xl">
         <div className="max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
-          <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">Elegí tu menú del mes</h2>
+          <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">Tu vianda del día</h2>
           <p className="mt-4 text-sm leading-6 text-ink/65">
-            Seleccioná una semana y el día que quieras resolver. Avanzá para conocer las propuestas publicadas.
+            Elegí el día y encontrá tu opción general, keto, veggie o proteica.
           </p>
         </div>
 
         <div className="mt-8 rounded-[1.75rem] bg-white p-5 shadow-soft sm:p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-orange/10 text-orange">
-                <CalendarDaysIcon className="h-6" />
-              </span>
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">{monthLabel}</p>
-                <h3 className="mt-1 font-display text-2xl font-semibold text-forest">
-                  Semana {weekIndex + 1} · {week.label}
-                </h3>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                disabled={weekIndex === 0}
-                onClick={() => setWeekIndex(weekIndex - 1)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-forest/10 px-4 py-3 text-sm font-extrabold text-forest disabled:cursor-not-allowed disabled:opacity-35 sm:flex-none"
-              >
-                <ChevronLeftIcon className="h-4" /> Anterior
-              </button>
-              <button
-                disabled={weekIndex >= weeks.length - 1}
-                onClick={() => setWeekIndex(weekIndex + 1)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-orange px-5 py-3 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-35 sm:flex-none"
-              >
-                Siguiente <ChevronRightIcon className="h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {weeks.map((item, index) => (
-              <button
-                key={item.start}
-                onClick={() => setWeekIndex(index)}
-                aria-label={`Ver semana del ${item.label}`}
-                className={`rounded-2xl border px-4 py-3 text-left transition ${
-                  index === weekIndex
-                    ? "border-orange bg-orange text-white"
-                    : "border-forest/10 bg-cream text-forest hover:border-orange/40"
-                }`}
-              >
-                <span className="block text-xs font-extrabold">
-                  {isCurrentWeek(item.start) ? "Semana actual" : `Semana ${index + 1}`}
-                </span>
-                <span className={`mt-1 block text-xs ${index === weekIndex ? "text-white/75" : "text-ink/55"}`}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {week.days.map((item, index) => (
               <button
                 key={item.date}
@@ -195,27 +172,30 @@ export default function MenuOptions() {
           </div>
         </div>
 
-        {!day.products.length && (
+        {!dailyProducts.length && (
           <p className="mt-10 rounded-2xl bg-white p-6 text-sm text-ink/60 shadow-soft">
             No hay platos publicados para {day.label.toLowerCase()}.
           </p>
         )}
 
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {day.products.map((product) => {
+          {dailyProducts.map(({ label, product }) => {
             const quantity = selections[keyOf(day.date, product.id)] ?? 0;
             const price = product.promotionalPrice ?? product.price;
             const soldOut = !product.available || product.stock < 1;
             const orderingClosed = !product.available && Boolean(product.orderDeadline);
             return (
               <article
-                key={product.id}
+                key={`${label}-${product.id}`}
                 className={`relative overflow-hidden rounded-[1.75rem] border bg-white p-6 text-left shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-forest/10"}`}
               >
+                <FavoriteButton productId={product.id} className="absolute right-9 top-9 z-10 h-11 w-11" />
                 <ProductImage src={product.imageUrl} alt={product.name} className="mb-4 aspect-square w-full rounded-2xl" sizes="(max-width: 768px) 100vw, 25vw" />
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">Menú</p>
+                    <p className="text-xs font-extrabold uppercase tracking-[.18em] text-orange">
+                      {label}
+                    </p>
                     <h3 className="mt-2 text-xl font-extrabold uppercase text-forest">{product.name}</h3>
                   </div>
                   {quantity > 0 && (
@@ -247,7 +227,9 @@ export default function MenuOptions() {
                       ? `Pedidos cerrados · límite ${product.orderDeadline} hs`
                       : soldOut
                         ? "Agotado"
-                        : `Para ${day.label.toLowerCase()}`}
+                        : product.stockManaged
+                          ? `Quedan ${product.stock} vianda${product.stock === 1 ? "" : "s"}`
+                          : `Para ${day.label.toLowerCase()}`}
                   </span>
                   <div className="flex items-center gap-3 rounded-full bg-cream/70 p-1">
                     <button
@@ -295,12 +277,19 @@ export default function MenuOptions() {
           </Link>
         </div>
 
-        {extras.length > 0 && (
-          <div className="mt-14">
-            <h3 className="font-display text-3xl text-forest">También podés sumar</h3>
+        {visibleSections.map((section) => (
+          <div key={section.title} className="mt-14">
+            <h3 className="font-display text-3xl text-forest">{section.title}</h3>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {extras.map((product) => (
-                <article key={product.id} className="rounded-2xl bg-white p-5 shadow-soft">
+              {section.products.map((product) => (
+                <article key={product.id} className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-soft">
+                  <FavoriteButton productId={product.id} className="absolute right-8 top-8 z-10 h-10 w-10" />
+                  <ProductImage
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="mb-4 aspect-square w-full rounded-xl"
+                    sizes="(max-width: 640px) 100vw, 25vw"
+                  />
                   <h4 className="text-lg font-extrabold uppercase text-forest">{product.name}</h4>
                   <p className="mt-2 text-sm font-extrabold text-orange">{money(product.promotionalPrice ?? product.price)}</p>
                   <p className="mt-3 text-xs leading-5 text-ink/65">{product.shortDescription}</p>
@@ -311,7 +300,7 @@ export default function MenuOptions() {
               ))}
             </div>
           </div>
-        )}
+        ))}
       </div>
     </section>
   );
@@ -335,9 +324,80 @@ function addCalendarDays(date: string, amount: number) {
   return value.toISOString().slice(0, 10);
 }
 
-function isCurrentWeek(start: string) {
-  const today = currentDayKey();
-  return today >= start && today <= addCalendarDays(start, 6);
+function normalizedCategory(category?: Category) {
+  return `${category?.slug ?? ""} ${category?.name ?? ""}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function normalizedProduct(product: Product, category?: Category) {
+  return `${product.badge ?? ""} ${product.name} ${normalizedCategory(category)} ${product.dietaryTags.join(" ")}`
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function normalizedProductName(product: Product) {
+  return product.name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function isDailyMenuProduct(product: Product, category?: Category) {
+  const name = normalizedProductName(product);
+  const categoryName = normalizedCategory(category);
+  return /^menu\b/.test(name) || /\bmenu\b|\bmenus\b|\bvianda\b|\bviandas\b/.test(categoryName);
+}
+
+function dailyMenuByType(products: Product[], categories: Map<string, Category>) {
+  const uniqueProducts = products.filter(
+    (product, index, list) =>
+      list.findIndex(
+        (item) =>
+          item.id === product.id ||
+          item.slug === product.slug ||
+          normalizedProductName(item) === normalizedProductName(product),
+      ) === index,
+  ).filter((product) => isDailyMenuProduct(product, categories.get(product.categoryId)));
+  const selected = new Set<string>();
+  const byLabel = new Map<string, Product>();
+
+  for (const { label, matches } of dailyMenuTypes) {
+    const product = [...uniqueProducts].reverse().find(
+      (item) =>
+        !selected.has(item.id) &&
+        matches(normalizedProduct(item, categories.get(item.categoryId))),
+    );
+    if (!product) continue;
+    selected.add(product.id);
+    byLabel.set(label, product);
+  }
+
+  return dailyMenuTypes.flatMap(({ label }) => {
+    const product = byLabel.get(label);
+    return product ? [{ label, product }] : [];
+  });
+}
+
+function groupCatalog(products: Product[], categories: Map<string, Category>): CatalogSection[] {
+  const grouped = catalogSections.map(({ title }) => ({ title, products: [] as Product[] }));
+  const seenIds = new Set<string>();
+
+  for (const product of products) {
+    if (seenIds.has(product.id)) continue;
+    const sectionIndex = catalogSections.findIndex((section) =>
+      section.matches(normalizedCategory(categories.get(product.categoryId))),
+    );
+    if (sectionIndex < 0) continue;
+    grouped[sectionIndex].products.push(product);
+    seenIds.add(product.id);
+  }
+
+  return grouped;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {

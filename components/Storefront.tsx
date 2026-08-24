@@ -8,7 +8,6 @@ import {
   MinusIcon,
   PlusIcon,
   ArrowRightIcon,
-  MapPinIcon,
   ClockIcon,
   ChevronDownIcon,
   ArrowRightOnRectangleIcon,
@@ -137,35 +136,25 @@ export default function Storefront() {
               disponible
             </span>
             <h1 className="font-display text-[44px] font-semibold leading-[.98] tracking-tight text-forest sm:text-7xl lg:text-[86px]">
-              Comé rico.
+              La solución a
               <br />
-              <i className="font-normal text-orange">Viví liviano.</i>
+              <i className="font-normal text-orange">tus comidas.</i>
             </h1>
             <p className="mt-6 max-w-lg text-sm leading-6 text-ink/75 sm:mt-7 sm:text-lg sm:leading-7">
-              Viandas caseras, frescas y equilibradas. Nosotros cocinamos; vos
-              elegís cómo disfrutar tu día.
+              Diseñamos tu menú equilibrado y cocinamos cada día para vos.
             </p>
             <div className="mt-7 flex flex-wrap gap-3 sm:mt-9">
               <a
                 href="#menu"
-                className="flex items-center gap-2 rounded-full bg-orange px-5 py-3 text-xs font-extrabold text-white shadow-lg shadow-orange/20 hover:-translate-y-1 sm:gap-3 sm:px-6 sm:py-4 sm:text-sm"
+                className="flex items-center gap-3 rounded-full bg-orange px-7 py-4 text-sm font-extrabold text-white shadow-lg shadow-orange/20 hover:-translate-y-1 sm:px-9 sm:py-5 sm:text-base"
               >
                 Ver menú de hoy <ArrowRightIcon className="h-4 w-4" />
-              </a>
-              <a
-                href="#como"
-                className="rounded-full border border-forest/20 bg-white/70 px-5 py-3 text-xs font-extrabold text-forest backdrop-blur hover:bg-white sm:px-6 sm:py-4 sm:text-sm"
-              >
-                ¿Cómo funciona?
               </a>
             </div>
             <div className="mt-8 flex flex-col gap-2 text-[11px] font-bold text-forest/70 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-5 sm:text-xs">
               <span className="flex items-center gap-2">
                 <ClockIcon className="h-4 text-orange" />{" "}
-                {deadline ? `Pedí hasta las ${deadline}` : "Pedí con anticipación"}
-              </span>
-              <span className="flex items-center gap-2">
-                <MapPinIcon className="h-4 text-orange" /> Envíos en la zona
+                Sugerimos hacer tu pedido antes de las 11:00 hs. para viandas del día
               </span>
             </div>
           </div>
@@ -213,30 +202,56 @@ export default function Storefront() {
         </div>
       </section>
       <section id="nosotros" className="px-5 py-20 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 rounded-[2.5rem] bg-[#e7dccb] p-8 md:flex-row md:p-12">
-          <div>
-            <h2 className="font-display text-3xl text-forest sm:text-4xl">
-              Comida de verdad, todos los días.
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">
-              Cocinamos en el día con ingredientes frescos, recetas simples y
-              ese toque casero que no se negocia.
-            </p>
-          </div>
-          <a
-            href="#menu"
-            className="whitespace-nowrap rounded-full bg-orange px-6 py-4 text-sm font-extrabold text-white"
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-12">
+          <Link
+            href="/promociones"
+            className="inline-flex rounded-full bg-orange px-12 py-5 text-lg font-extrabold text-white shadow-xl shadow-orange/25 hover:bg-forest sm:px-16 sm:py-6 sm:text-xl"
           >
-            Armar mi pedido
-          </a>
+            ¡Quiero mi promo!
+          </Link>
+          <div className="flex w-full flex-col items-center justify-between gap-8 rounded-[2.5rem] bg-[#e7dccb] p-8 md:flex-row md:p-12">
+            <div>
+              <h2 className="font-display text-3xl text-forest sm:text-4xl">
+                Comida creada por nutricionistas.
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">
+                Cocinamos en el día con ingredientes frescos, recetas simples y
+                ese toque casero que no se negocia.
+              </p>
+            </div>
+            <a
+              href="#menu"
+              className="whitespace-nowrap rounded-full bg-orange px-6 py-4 text-sm font-extrabold text-white"
+            >
+              Armar mi pedido
+            </a>
+          </div>
         </div>
       </section>
       <footer className="bg-[#102b20] px-5 py-10 text-cream lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
           <Logo light />
-          <p className="text-xs text-cream/50">
-            © 2026 Vital Food Viandas · Hecho con sabor
-          </p>
+          <div className="flex flex-col items-center gap-2 text-xs text-cream/65 sm:items-end">
+            <p className="text-cream/50">
+              © 2026 Vital Food Viandas · Hecho con sabor
+            </p>
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Neyra+144%2C+Gualeguaychu%2C+Entre+Rios"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-orange"
+            >
+              Ubicación: Neyra 144, Gualeguaychú
+            </a>
+            <a
+              href="https://wa.me/5493446205554"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-orange"
+            >
+              WhatsApp: 3446205554
+            </a>
+          </div>
         </div>
       </footer>
       {open && (

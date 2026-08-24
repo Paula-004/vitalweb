@@ -20,6 +20,9 @@ export interface MenuWeek {
   days: MenuDay[]
 }
 
+/** La semana comercial va de lunes a sábado: el domingo no se publica menú. */
+const DAYS_PER_WEEK = 6
+
 const toUtcDate = (date: string) => {
   const [year, month, day] = date.split('-').map(Number)
   return new Date(Date.UTC(year, month - 1, day))
@@ -55,7 +58,16 @@ export function buildWeeks(menus: DailyMenu[], products: Product[]): MenuWeek[] 
       label: format(menu.date, { weekday: 'long', day: 'numeric' }).replace(/^\w/, letter => letter.toUpperCase()),
       menu,
       products: menu.items
-        .map(item => products.find(product => product.id === item.productId))
+        .map(item => {
+          const product = products.find(candidate => candidate.id === item.productId)
+          if (!product || item.availableStock === undefined) return product
+          return {
+            ...product,
+            stock: item.availableStock,
+            stockManaged: true,
+            available: product.available && item.availableStock > 0,
+          }
+        })
         .filter((product): product is Product => Boolean(product) && product!.active),
     }
     const key = startOfWeek(menu.date)
@@ -64,7 +76,7 @@ export function buildWeeks(menus: DailyMenu[], products: Product[]): MenuWeek[] 
   return Array.from(byWeek.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([start, days]) => {
-      const end = addDays(start, 6)
+      const end = addDays(start, DAYS_PER_WEEK - 1)
       return { start, end, label: weekLabel(start, end), days }
     })
 }
@@ -83,11 +95,11 @@ export function fillCalendarWeeks(
   const firstMonday = startOfWeek(referenceDate)
   return Array.from({ length: count }, (_, weekIndex) => {
     const start = addDays(firstMonday, weekIndex * 7)
-    const end = addDays(start, 6)
+    const end = addDays(start, DAYS_PER_WEEK - 1)
     const publishedDays = new Map(
       (publishedByStart.get(start)?.days ?? []).map(day => [day.date, day]),
     )
-    const days = Array.from({ length: 5 }, (_, dayIndex) => {
+    const days = Array.from({ length: DAYS_PER_WEEK }, (_, dayIndex) => {
       const date = addDays(start, dayIndex)
       return publishedDays.get(date) ?? {
         date,

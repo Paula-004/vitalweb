@@ -1,8 +1,8 @@
 import { Coupon, PaymentMethod, Promotion, ShippingZone, StoreConfig, TimeSlot, User } from '@/types/domain'
 
 export const mockUsers: User[] = [
- { id:'user-demo-001',firstName:'Marina',lastName:'Gómez',username:'marina',phone:'+54 9 11 5555 0101',createdAt:'2026-06-01T12:00:00.000Z',addresses:[{id:'addr-demo-001',label:'Casa',recipientName:'Marina Gómez',street:'Arenales',streetNumber:'1234',floor:'4',apartment:'B',city:'Buenos Aires',postalCode:'C1061',province:'Buenos Aires',phone:'+54 9 11 5555 0101',deliveryNotes:'Timbre 4B, dejar en recepción.',isDefault:true,shippingZoneId:'zone-caba'}]},
- { id:'user-demo-002',firstName:'Tomás',lastName:'Rossi',username:'tomas',phone:'+54 9 11 5555 0202',createdAt:'2026-05-14T10:00:00.000Z',addresses:[] },
+ { id:'user-demo-001',firstName:'Marina',lastName:'Gómez',username:'marina',email:'marina@vital.demo',phone:'+54 9 11 5555 0101',createdAt:'2026-06-01T12:00:00.000Z',addresses:[{id:'addr-demo-001',label:'Casa',recipientName:'Marina Gómez',street:'Arenales',streetNumber:'1234',floor:'4',apartment:'B',city:'Buenos Aires',postalCode:'C1061',province:'Buenos Aires',phone:'+54 9 11 5555 0101',deliveryNotes:'Timbre 4B, dejar en recepción.',isDefault:true,shippingZoneId:'zone-caba'}]},
+ { id:'user-demo-002',firstName:'Tomás',lastName:'Rossi',username:'tomas',email:'tomas@vital.demo',phone:'+54 9 11 5555 0202',createdAt:'2026-05-14T10:00:00.000Z',addresses:[] },
 ]
 export const mockPaymentMethods: PaymentMethod[] = [
   { id:'pay-mercadopago',name:'Mercado Pago',type:'wallet',description:'Resultado simulado, sin redirección real.',active:true },
