@@ -35,15 +35,18 @@ describe('login', () => {
 
 describe('registro', () => {
   it('crea la cuenta y deja al cliente con sesión iniciada', async () => {
-    const username = `ana${Date.now()}`
-    const { data } = await authService.register({ username, password: 'unaclave123' })
-    expect(data.user.username).toBe(username)
+    const phone = `+54 11 ${String(Date.now()).slice(-8)}`
+    const { data } = await authService.register({ firstName: 'Ana', lastName: 'Pérez', phone, password: 'unaclave123' })
+    expect(data.user.firstName).toBe('Ana')
+    expect(data.user.lastName).toBe('Pérez')
+    expect(data.user.phone).toBe(phone)
     expect(data.user.addresses).toEqual([])
     expect(data.accessToken).toBeTruthy()
   })
 
-  it('rechaza con 409 un usuario ya registrado', async () => {
-    await expect(authService.register({ username: DEMO_USERNAME, password: 'unaclave123' }))
+  it('rechaza con 409 un teléfono ya registrado', async () => {
+    await authService.register({ firstName: 'Ana', lastName: 'Pérez', phone: '+54 11 4444 5555', password: 'unaclave123' })
+    await expect(authService.register({ firstName: 'Otra', lastName: 'Persona', phone: '+54 11 4444 5555', password: 'unaclave123' }))
       .rejects.toMatchObject({ status: 409 })
   })
 })

@@ -8,10 +8,15 @@ import { authService } from '@/services'
 type Mode = 'login' | 'register' | 'recover' | 'reset'
 
 const MIN_PASSWORD = 8
+const PHONE_PATTERN = /^[\d\s+()-]{6,}$/
 
 /** Validación previa al envío: evita viajes al backoffice por datos obviamente incompletos. */
 function validate(mode: Mode, values: Record<string, string>): string {
-  if ((mode === 'login' || mode === 'register') && (values.username?.trim().length ?? 0) < 3) return 'El nombre de usuario debe tener al menos 3 caracteres.'
+  if (mode === 'login' && (values.username?.trim().length ?? 0) < 3) return 'Ingresá tu teléfono o usuario.'
+  if (mode === 'register') {
+    if (!values.firstName?.trim() || !values.lastName?.trim()) return 'Completá tu nombre y apellido.'
+    if (!PHONE_PATTERN.test(values.phone ?? '')) return 'Ingresá un teléfono válido.'
+  }
   if (mode === 'reset') {
     if ((values.password ?? '').length < MIN_PASSWORD) return `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.`
     if (values.password !== values.passwordConfirm) return 'Las contraseñas no coinciden.'
@@ -48,7 +53,7 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     try {
       if (mode === 'login') { await auth.login({ username: values.username, password: values.password }); router.push(next) }
       if (mode === 'register') {
-        await auth.register({ username: values.username, password: values.password, sellerCode })
+        await auth.register({ firstName: values.firstName, lastName: values.lastName, phone: values.phone, password: values.password, sellerCode })
         router.push(next)
       }
       if (mode === 'reset') {
@@ -93,7 +98,12 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
       </div>
     )}
     <form onSubmit={submit} noValidate className="mt-6 space-y-4">
-      {mode !== 'reset' && <Field name="username" label="Nombre de usuario" autoComplete="username" defaultValue={mode === 'login' && authService.isMock ? 'marina' : ''} />}
+      {mode === 'register' && <div className="grid grid-cols-2 gap-3">
+        <Field name="firstName" label="Nombre" autoComplete="given-name" />
+        <Field name="lastName" label="Apellido" autoComplete="family-name" />
+      </div>}
+      {mode === 'register' && <Field name="phone" label="Teléfono" type="tel" autoComplete="tel" hint="Lo vas a usar para ingresar a tu cuenta." />}
+      {mode === 'login' && <Field name="username" label="Teléfono o usuario" autoComplete="username" defaultValue={authService.isMock ? 'marina' : ''} />}
       <Field name="password" label="Contraseña" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} defaultValue={mode === 'login' && authService.isMock ? 'vital123' : ''} />
       {mode === 'reset' && <Field name="passwordConfirm" label="Repetir contraseña" type="password" autoComplete="new-password" />}
 

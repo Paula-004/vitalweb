@@ -102,7 +102,9 @@ describe('cuenta del cliente', () => {
   it('el registro devuelve una sesión que el adaptador entiende', async ({ skip }) => {
     if (!reachable) return skip()
     const { data } = await post('/storefront/auth/register', {
-      username: `test-${Date.now()}`,
+      firstName: 'Prueba',
+      lastName: 'Integración',
+      phone: `+54911${String(Date.now()).slice(-8)}`,
       password: 'unaclave123',
       ...(sellerCode ? { sellerCode } : {}),
     })
@@ -123,7 +125,7 @@ describe('cuenta del cliente', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: `codigo-${Date.now()}`,
+        firstName: 'Código', lastName: 'Inválido', phone: `+54911${String(Date.now()).slice(-8)}`,
         password: 'unaclave123', sellerCode: 'NO-EXISTE-JAMAS',
       }),
     })

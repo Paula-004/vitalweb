@@ -63,7 +63,9 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerRegister, {
         method: 'POST',
         body: JSON.stringify({
-          username: input.username,
+          firstName: input.firstName.trim(),
+          lastName: input.lastName.trim(),
+          phone: input.phone.trim(),
           password: input.password,
           // Se omite si viene vacío: el backoffice rechaza un código inexistente,
           // pero acepta que no venga ninguno (venta directa).
@@ -72,11 +74,11 @@ export const authService = {
       })
       return { ...response, data: toSession(response.data) }
     }
-    const username = input.username.trim().toLowerCase()
+    const username = input.phone.replace(/\D/g, '')
     if (mockUsers.some(user => (user.username ?? user.firstName).toLowerCase() === username)) {
-      throw new DataSourceError('Ese nombre de usuario ya está en uso.', 409)
+      throw new DataSourceError('Ese teléfono ya tiene una cuenta.', 409)
     }
-    const user = { id: `user-mock-${Date.now()}`, username, firstName: username, lastName: '', phone: '', addresses: [], createdAt: new Date().toISOString() }
+    const user = { id: `user-mock-${Date.now()}`, username, firstName: input.firstName.trim(), lastName: input.lastName.trim(), phone: input.phone.trim(), addresses: [], createdAt: new Date().toISOString() }
     mockUsers.push(user)
     return mockResponse(session(user))
   },
