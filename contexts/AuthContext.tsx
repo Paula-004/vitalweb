@@ -25,8 +25,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => configureApiClient({ getAccessToken: () => session?.accessToken ?? null, onUnauthorized: () => setSession(null) }), [session])
   useEffect(() => { if (!ready) return; if (session) authService.saveSession(session); else authService.clearSession() }, [session, ready])
 
-  const login = useCallback(async (input: LoginInput) => { setSession((await authService.login(input)).data) }, [])
-  const register = useCallback(async (input: RegisterInput) => { setSession((await authService.register(input)).data) }, [])
+  const activateSession = useCallback((nextSession: AuthSession) => {
+    // Mi cuenta dispara varias consultas al montarse. Instalamos el token antes
+    // de navegar para que ninguna salga anónima y borre la sesión recién creada.
+    authService.saveSession(nextSession)
+    configureApiClient({
+      getAccessToken: () => nextSession.accessToken,
+      onUnauthorized: () => setSession(null),
+    })
+    setSession(nextSession)
+  }, [])
+
+  const login = useCallback(async (input: LoginInput) => {
+    activateSession((await authService.login(input)).data)
+  }, [activateSession])
+  const register = useCallback(async (input: RegisterInput) => {
+    activateSession((await authService.register(input)).data)
+  }, [activateSession])
   const logout = useCallback(async () => { await authService.logout(); setSession(null) }, [])
   const resetPassword = useCallback(async (input: ResetPasswordInput) => { await authService.resetPassword(input) }, [])
   const updateProfile = useCallback(async (input: UpdateProfileInput) => {
