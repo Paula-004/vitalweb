@@ -20,6 +20,7 @@ import { useStoreConfig } from "@/hooks/useStoreConfig";
 import MenuOptions from "./MenuOptions";
 const money = (n: number) => "$" + n.toLocaleString("es-AR");
 export default function Storefront() {
+  const isMobileApp = process.env.NEXT_PUBLIC_APP_TARGET === "mobile";
   const { session, logout } = useAuth();
   const cart = useCart();
   const { data: storeConfig } = useStoreConfig();
@@ -50,7 +51,7 @@ export default function Storefront() {
     await logout();
   };
   return (
-    <main className="min-h-screen overflow-hidden">
+    <main className={isMobileApp ? "min-h-[100dvh] overflow-x-clip overflow-y-visible" : "min-h-screen overflow-hidden"}>
       <div className="absolute left-3 right-3 top-3 z-40 flex items-center justify-end gap-1.5 sm:left-auto sm:right-8 sm:top-5 sm:flex-col sm:gap-2">
         <div className="flex items-center gap-1.5 sm:gap-2">
           {session ? (
