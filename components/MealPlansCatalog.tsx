@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { promotionService } from '@/services'
 import { Promotion } from '@/types/domain'
-import SiteFooter from './SiteFooter'
 import SiteHeader from './SiteHeader'
 
 const labels: Record<string, string> = { DAY: 'Por día', WEEK: 'Por semana', MONTH: 'Por mes' }
@@ -56,6 +55,5 @@ export default function MealPlansCatalog() {
         </div>
       </div>
     </section>
-    <SiteFooter />
   </main>
 }
