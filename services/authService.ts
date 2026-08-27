@@ -67,6 +67,8 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerRegister, {
         method: 'POST',
         body: JSON.stringify({
+          // El teléfono también funciona como credencial interna de acceso.
+          username: input.phone.replace(/\D/g, ''),
           firstName: input.firstName.trim(),
           lastName: input.lastName.trim(),
           phone: input.phone.trim(),
