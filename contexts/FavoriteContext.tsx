@@ -20,19 +20,24 @@ export function FavoriteProvider({ children }: { children: ReactNode }) {
     const sync = async () => {
       setLoading(true)
       try {
-        const next = remote ? await favoriteService.mergeLocalIntoAccount() : favoriteService.loadLocal()
+        if (!session) {
+          if (!cancelled) setIds([])
+          return
+        }
+        const next = remote ? await favoriteService.mergeLocalIntoAccount() : []
         if (!cancelled) setIds(next)
       } catch {
-        if (!cancelled) setIds(favoriteService.loadLocal())
+        if (!cancelled) setIds([])
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
     void sync()
     return () => { cancelled = true }
-  }, [ready, remote, userId])
+  }, [ready, remote, session, userId])
 
   const toggle = useCallback((productId: string) => {
+    if (!session) return
     const wasFavorite = ids.includes(productId)
     const next = favoriteService.toggle(ids, productId)
     setIds(next) // respuesta inmediata
@@ -40,13 +45,10 @@ export function FavoriteProvider({ children }: { children: ReactNode }) {
     request
       .then(next => setIds(next))
       .catch(() => {
-        // Si el backoffice esta temporalmente caido o aun no publico la ruta, se
-        // conserva la eleccion en este navegador. En el proximo login/sync se
-        // fusiona con la cuenta sin perder lo que el cliente marco.
-        favoriteService.saveLocal(next)
-        setIds(next)
+        // Si no se pudo guardar en la cuenta, se revierte el cambio optimista.
+        setIds(ids)
       })
-  }, [ids, remote])
+  }, [ids, remote, session])
 
   const value = useMemo(() => ({ ids, loading, toggle, has: (id: string) => ids.includes(id) }), [ids, loading, toggle])
   return <Context.Provider value={value}>{children}</Context.Provider>
