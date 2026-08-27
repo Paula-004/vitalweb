@@ -146,6 +146,23 @@ export default function MenuOptions() {
     }
   };
 
+  const changeCatalogQuantity = (product: Product, amount: number) => {
+    if (!cart.ready) return;
+    const cartItem = cart.cart.items.find((item) => item.productId === product.id);
+    const quantity = cartItem?.quantity ?? 0;
+
+    try {
+      if (amount > 0) {
+        cart.add(product);
+        notify(`${product.name} agregado al carrito.`);
+      } else if (quantity > 0) {
+        cart.updateQuantity(product.id, quantity - 1);
+      }
+    } catch (cause) {
+      notify(cause instanceof Error ? cause.message : "No se pudo actualizar el carrito.", "error");
+    }
+  };
+
   return (
     <section id="menu" className="grain px-5 py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -280,8 +297,11 @@ export default function MenuOptions() {
           <div key={section.title} className="mt-14">
             <h3 className="font-display text-3xl text-forest">{section.title}</h3>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {section.products.map((product) => (
-                <article key={product.id} className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-soft">
+              {section.products.map((product) => {
+                const quantity = cart.cart.items.find((item) => item.productId === product.id)?.quantity ?? 0;
+                const soldOut = !product.available || product.stock < 1;
+                return (
+                <article key={product.id} className={`relative overflow-hidden rounded-2xl border bg-white p-5 shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-transparent"}`}>
                   <FavoriteButton productId={product.id} className="absolute right-8 top-8 z-10 h-10 w-10" />
                   <ProductImage
                     src={product.imageUrl}
@@ -292,11 +312,17 @@ export default function MenuOptions() {
                   <h4 className="text-lg font-extrabold uppercase text-forest">{product.name}</h4>
                   <p className="mt-2 text-sm font-extrabold text-orange">{money(product.promotionalPrice ?? product.price)}</p>
                   <p className="mt-3 text-xs leading-5 text-ink/65">{product.shortDescription}</p>
-                  <Link href={`/producto/${product.slug}`} className="mt-4 inline-block text-xs font-extrabold text-orange">
-                    Ver detalle
-                  </Link>
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-forest/10 pt-4">
+                    <Link href={`/producto/${product.slug}`} className="text-xs font-extrabold text-orange">Ver detalle</Link>
+                    <div className="flex items-center gap-3 rounded-full bg-cream/70 p-1">
+                      <button disabled={quantity === 0} onClick={() => changeCatalogQuantity(product, -1)} aria-label={`Quitar ${product.name}`} className="grid h-8 w-8 place-items-center rounded-full text-lg font-extrabold text-forest disabled:opacity-25">−</button>
+                      <b className="min-w-5 text-center text-sm text-forest">{quantity}</b>
+                      <button disabled={soldOut || quantity >= product.stock} onClick={() => changeCatalogQuantity(product, 1)} aria-label={`Agregar ${product.name}`} className="grid h-8 w-8 place-items-center rounded-full bg-orange text-lg font-extrabold text-white disabled:opacity-25">+</button>
+                    </div>
+                  </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}

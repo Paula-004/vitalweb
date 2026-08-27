@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRequireSession } from "@/hooks/useRequireSession";
 import { Address, MealBalanceSummary, Order } from "@/types/domain";
-type Tab = "profile" | "plans" | "addresses" | "orders";
+type Tab = "meals" | "promos" | "orders" | "profile";
 const statuses: Record<string, string> = {
   pending: "Pendiente",
   confirmed: "Confirmado",
@@ -23,7 +23,7 @@ export default function AccountDashboard() {
     { session, checking } = useRequireSession(),
     cart = useCart(),
     router = useRouter();
-  const [tab, setTab] = useState<Tab>("profile"),
+  const [tab, setTab] = useState<Tab>("meals"),
     [orders, setOrders] = useState<Order[]>([]),
     [selected, setSelected] = useState<Order | null>(null),
     [notice, setNotice] = useState(""),
@@ -70,6 +70,18 @@ export default function AccountDashboard() {
       </div>
     );
   const profile = session.user;
+  const today = new Date().toISOString().slice(0, 10);
+  const activePromos = mealBalance.balances.filter(
+    (balance) => balance.startsAt <= today && balance.endsAt >= today,
+  );
+  const mostRecentEndedPromo = mealBalance.balances
+    .filter((balance) => balance.endsAt < today)
+    .sort((a, b) => b.endsAt.localeCompare(a.endsAt))[0];
+  const pendingOrders = orders.filter(
+    (order) => order.status !== "delivered" && order.status !== "cancelled",
+  );
+  const deliveredOrders = orders.filter((order) => order.status === "delivered");
+  const cancelledOrders = orders.filter((order) => order.status === "cancelled");
   const setAddresses = (addresses: Address[]) =>
     setSession((current) =>
       current ? { ...current, user: { ...current.user, addresses } } : current,
@@ -187,10 +199,10 @@ export default function AccountDashboard() {
       <div className="mt-8 flex gap-2 overflow-x-auto">
         {(
           [
-            ["profile", "Mis datos"],
-            ["plans", `Mis viandas (${mealBalance.totalRemaining})`],
-            ["addresses", "Direcciones"],
+            ["meals", `Mis viandas (${mealBalance.totalRemaining})`],
+            ["promos", "Mis promos"],
             ["orders", "Mis pedidos"],
+            ["profile", "Mis datos"],
           ] as [Tab, string][]
         ).map((item) => (
           <button
@@ -216,20 +228,24 @@ export default function AccountDashboard() {
         </p>
       )}
       {tab === "profile" && (
-        <form
-          onSubmit={saveProfile}
-          className="mt-6 grid max-w-2xl gap-4 rounded-[2rem] bg-white p-6 sm:grid-cols-2"
-        >
-          <Field name="firstName" label="Nombre" value={profile.firstName} />
-          <Field name="lastName" label="Apellido" value={profile.lastName} />
-          <Field name="phone" label="Teléfono" value={profile.phone} />
-          <button className="rounded-full bg-orange px-5 py-3 text-sm font-bold text-white sm:col-span-2">
-            Guardar cambios
-          </button>
-        </form>
-      )}
-      {tab === "addresses" && (
-        <div className="mt-6">
+        <div className="mt-6 max-w-2xl">
+          <form
+            onSubmit={saveProfile}
+            className="grid gap-4 rounded-[2rem] bg-white p-6 sm:grid-cols-2"
+          >
+            <Field name="firstName" label="Nombre" value={profile.firstName} />
+            <Field name="lastName" label="Apellido" value={profile.lastName} />
+            <Field name="phone" label="Teléfono" value={profile.phone} />
+            <button className="rounded-full bg-orange px-5 py-3 text-sm font-bold text-white sm:col-span-2">
+              Guardar cambios
+            </button>
+          </form>
+          <div className="mb-4 mt-6">
+            <h2 className="font-display text-2xl text-forest">Dirección</h2>
+            <p className="mt-2 inline-flex rounded-full bg-[#fff2d8] px-3 py-1.5 text-xs font-bold text-[#6d4b12]">
+              Las entregas son únicamente dentro de Gualeguaychú.
+            </p>
+          </div>
           <button
             onClick={() => setShowAddress(!showAddress)}
             className="rounded-full bg-orange px-5 py-3 text-sm font-bold text-white"
@@ -281,7 +297,7 @@ export default function AccountDashboard() {
           </div>
         </div>
       )}
-      {tab === "plans" && (
+      {tab === "meals" && (
         <div className="mt-6 max-w-3xl">
           <div className="rounded-[2rem] bg-forest p-7 text-cream">
             <p className="text-xs font-extrabold uppercase tracking-widest text-orange">Saldo disponible</p>
@@ -299,7 +315,28 @@ export default function AccountDashboard() {
             ))}
             {!mealBalance.balances.length && <p className="rounded-2xl bg-white p-6 text-sm text-ink/60">No tenés un paquete vigente. Consultanos por las promos disponibles.</p>}
           </div>
-          <Link href="/promociones" className="mt-5 inline-block rounded-full bg-orange px-5 py-3 text-sm font-bold text-white">Ver promos</Link>
+        </div>
+      )}
+      {tab === "promos" && (
+        <div className="mt-6 max-w-4xl">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-widest text-orange">Promociones compradas</p>
+              <h2 className="mt-2 font-display text-3xl text-forest">Tus promos</h2>
+            </div>
+            <Link href="/promociones" className="rounded-full bg-orange px-5 py-3 text-center text-sm font-bold text-white">Quiero mi promo</Link>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {activePromos.map((balance) => (
+              <PromoCard key={balance.id} balance={balance} status="Vigente" />
+            ))}
+            {mostRecentEndedPromo && (
+              <PromoCard balance={mostRecentEndedPromo} status="Finalizada" />
+            )}
+            {!activePromos.length && !mostRecentEndedPromo && (
+              <p className="rounded-2xl bg-white p-6 text-sm text-ink/60">Todavía no compraste promociones.</p>
+            )}
+          </div>
         </div>
       )}
       {tab === "orders" && (
@@ -371,8 +408,18 @@ export default function AccountDashboard() {
               carrito.
             </p>
           )}
-          {orders.map((order) => (
-            <article key={order.id} className="rounded-2xl bg-white p-5">
+          {[...pendingOrders, ...deliveredOrders, ...cancelledOrders].map((order) => (
+            <div key={order.id} className="contents">
+            {order.id === pendingOrders[0]?.id && (
+              <h2 className="mt-2 font-display text-2xl text-forest">Pedidos pendientes</h2>
+            )}
+            {order.id === deliveredOrders[0]?.id && (
+              <h2 className="mt-5 font-display text-2xl text-forest">Pedidos entregados</h2>
+            )}
+            {order.id === cancelledOrders[0]?.id && (
+              <h2 className="mt-5 font-display text-2xl text-forest">Pedidos cancelados</h2>
+            )}
+            <article className={`rounded-2xl border p-5 ${order.status === "delivered" ? "border-green-200 bg-green-50" : order.status === "cancelled" ? "border-red-100 bg-red-50" : "border-orange/20 bg-white"}`}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <b className="text-forest">Pedido {order.id}</b>
@@ -412,6 +459,7 @@ export default function AccountDashboard() {
                 </div>
               )}
             </article>
+            </div>
           ))}
         </div>
       )}
@@ -490,6 +538,40 @@ function AddressCard({
           Eliminar
         </button>
       </div>
+    </article>
+  );
+}
+
+function PromoCard({
+  balance,
+  status,
+}: {
+  balance: MealBalanceSummary["balances"][number];
+  status: "Vigente" | "Finalizada";
+}) {
+  const ended = status === "Finalizada";
+  return (
+    <article className={`rounded-[2rem] border p-6 shadow-soft ${ended ? "border-forest/10 bg-white" : "border-orange/30 bg-[#fff7ed]"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-wider text-orange">{balance.planName}</p>
+          <p className="mt-2 text-sm text-ink/60">{balance.totalMeals} viandas compradas</p>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold uppercase ${ended ? "bg-forest/10 text-forest" : "bg-orange text-white"}`}>
+          {status}
+        </span>
+      </div>
+      <p className="mt-5 text-3xl font-extrabold text-forest">
+        {balance.remainingMeals} <span className="text-sm font-normal text-ink/50">viandas disponibles</span>
+      </p>
+      <p className="mt-3 text-xs text-ink/50">
+        {ended ? "Finalizó" : "Válida"} el {new Date(`${balance.endsAt}T00:00:00Z`).toLocaleDateString("es-AR", { timeZone: "UTC" })}
+      </p>
+      {ended && (
+        <Link href="/promociones" className="mt-5 inline-block rounded-full bg-orange px-4 py-2 text-xs font-bold text-white">
+          Volver a comprar
+        </Link>
+      )}
     </article>
   );
 }

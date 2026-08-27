@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { promotionService } from '@/services'
+import { useAuth } from '@/contexts/AuthContext'
 import { Promotion } from '@/types/domain'
 import SiteHeader from './SiteHeader'
 
@@ -9,6 +10,7 @@ const labels: Record<string, string> = { DAY: 'Por día', WEEK: 'Por semana', MO
 const money = (value: number) => '$' + value.toLocaleString('es-AR')
 
 export default function MealPlansCatalog() {
+  const { session, ready } = useAuth()
   const [plans, setPlans] = useState<Promotion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -16,7 +18,7 @@ export default function MealPlansCatalog() {
   useEffect(() => {
     promotionService.getAll()
       .then(response => setPlans(response.data.filter(plan => plan.mealCount && plan.period)))
-      .catch(cause => setError(cause instanceof Error ? cause.message : 'No pudimos cargar las promos.'))
+      .catch(() => setError('Estamos actualizando las promociones. Volvé a intentar en unos minutos.'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -48,8 +50,19 @@ export default function MealPlansCatalog() {
             <p className="mt-5 text-2xl font-extrabold text-forest">{money(plan.price ?? plan.value)}</p>
             <p className="mt-2 text-xs text-ink/50">Consultanos para activar el paquete en tu cuenta.</p>
             <div className="mt-6 flex gap-2">
-              <Link href="/registro" className="flex-1 rounded-full bg-orange px-5 py-3 text-center text-sm font-bold text-white">Crear cuenta</Link>
-              <Link href="/menu-semanal" className="flex-1 rounded-full border border-forest/15 px-5 py-3 text-center text-sm font-bold text-forest">Ver menú</Link>
+              {ready && !session && (
+                <Link href="/login?next=%2Fpromociones" className="flex-1 rounded-full bg-orange px-5 py-3 text-center text-sm font-bold text-white">
+                  Iniciar sesión
+                </Link>
+              )}
+              <a
+                href={`https://wa.me/5493446205554?text=${encodeURIComponent(`Hola, quiero la promo ${plan.name} de ${plan.mealCount} viandas.`)}`}
+                target="_blank"
+                rel="noreferrer"
+                className={`${ready && !session ? 'flex-1 border border-forest/15 text-forest' : 'w-full bg-orange text-white'} rounded-full px-5 py-3 text-center text-sm font-bold`}
+              >
+                La quiero
+              </a>
             </div>
           </article>)}
         </div>
