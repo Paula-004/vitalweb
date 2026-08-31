@@ -168,7 +168,9 @@ export default function MenuOptions() {
       <div className="mx-auto max-w-7xl">
         <div className="max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
-          <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">Tu vianda del día</h2>
+          <h2 className="mt-3 rounded-2xl bg-forest/10 px-5 py-4 font-display text-5xl font-bold leading-tight text-forest sm:px-6 sm:text-6xl">
+            Tu vianda del día
+          </h2>
           <p className="mt-4 text-sm leading-6 text-ink/65">
             Elegí el día y encontrá tu opción general, keto, veggie o proteica.
           </p>
@@ -295,7 +297,9 @@ export default function MenuOptions() {
 
         {visibleSections.map((section) => (
           <div key={section.title} className="mt-14">
-            <h3 className="font-display text-3xl text-forest">{section.title}</h3>
+            <h3 className="rounded-2xl bg-forest/10 px-5 py-3 font-display text-4xl font-bold leading-tight text-forest sm:px-6 sm:text-5xl">
+              {section.title}
+            </h3>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {section.products.map((product) => {
                 const quantity = cart.cart.items.find((item) => item.productId === product.id)?.quantity ?? 0;
@@ -430,7 +434,9 @@ function Frame({ children }: { children: React.ReactNode }) {
     <section id="menu" className="grain px-5 py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
-        <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">Elegí tu menú del mes</h2>
+        <h2 className="mt-3 rounded-2xl bg-forest/10 px-5 py-4 font-display text-5xl font-bold leading-tight text-forest sm:px-6 sm:text-6xl">
+          Elegí tu menú del mes
+        </h2>
         <div className="mt-6">{children}</div>
       </div>
     </section>
