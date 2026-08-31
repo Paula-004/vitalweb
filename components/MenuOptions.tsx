@@ -168,7 +168,7 @@ export default function MenuOptions() {
       <div className="mx-auto max-w-7xl">
         <div className="max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
-          <h2 className="mt-3 rounded-2xl bg-forest/10 px-5 py-4 font-display text-5xl font-bold leading-tight text-forest sm:px-6 sm:text-6xl">
+          <h2 className="mt-3 rounded-2xl bg-forest/10 px-5 py-4 font-display text-4xl font-bold leading-tight text-forest sm:px-6 sm:text-5xl">
             Tu vianda del día
           </h2>
           <p className="mt-4 text-sm leading-6 text-ink/65">
@@ -297,7 +297,7 @@ export default function MenuOptions() {
 
         {visibleSections.map((section) => (
           <div key={section.title} className="mt-14">
-            <h3 className="rounded-2xl bg-forest/10 px-5 py-3 font-display text-4xl font-bold leading-tight text-forest sm:px-6 sm:text-5xl">
+            <h3 className="rounded-2xl bg-forest/10 px-5 py-3 font-display text-3xl font-bold leading-tight text-forest sm:px-6 sm:text-4xl">
               {section.title}
             </h3>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -434,7 +434,7 @@ function Frame({ children }: { children: React.ReactNode }) {
     <section id="menu" className="grain px-5 py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
-        <h2 className="mt-3 rounded-2xl bg-forest/10 px-5 py-4 font-display text-5xl font-bold leading-tight text-forest sm:px-6 sm:text-6xl">
+        <h2 className="mt-3 rounded-2xl bg-forest/10 px-5 py-4 font-display text-4xl font-bold leading-tight text-forest sm:px-6 sm:text-5xl">
           Elegí tu menú del mes
         </h2>
         <div className="mt-6">{children}</div>
