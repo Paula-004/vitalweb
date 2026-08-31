@@ -100,18 +100,17 @@ export default function Storefront() {
         </div>
         <div className="absolute -bottom-1 left-0 h-12 w-full rounded-[50%_50%_0_0/100%_100%_0_0] bg-cream" />
       </section>
-      <MenuOptions />
-      <section id="como" className="bg-forest px-5 py-24 text-cream lg:px-8">
+      <section id="como" className="bg-forest px-5 py-12 text-cream sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="max-w-xl">
-            <p className="text-xs font-extrabold uppercase tracking-[.2em] text-orange">
+          <div className="max-w-lg">
+            <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-orange sm:text-xs">
               Así de simple
             </p>
-            <h2 className="mt-3 font-display text-4xl sm:text-5xl">
+            <h2 className="mt-2 font-display text-2xl font-medium sm:text-3xl">
               Tu almuerzo resuelto en tres pasos.
             </h2>
           </div>
-          <div className="mt-14 grid gap-8 md:grid-cols-3">
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
             {[
               ["01", "Elegí", "Explorá el menú del día y armá tu combinación."],
               [
@@ -127,12 +126,12 @@ export default function Storefront() {
                 "Recibí comida casera, fresca y lista para comer.",
               ],
             ].map((x) => (
-              <div key={x[0]} className="border-t border-cream/20 pt-6">
-                <span className="font-display text-5xl text-orange">
+              <div key={x[0]} className="border-t border-cream/20 pt-4">
+                <span className="font-display text-3xl text-orange">
                   {x[0]}
                 </span>
-                <h3 className="mt-6 text-xl font-extrabold">{x[1]}</h3>
-                <p className="mt-2 max-w-xs text-sm leading-6 text-cream/65">
+                <h3 className="mt-3 text-base font-bold">{x[1]}</h3>
+                <p className="mt-1.5 max-w-xs text-xs leading-5 text-cream/65">
                   {x[2]}
                 </p>
               </div>
@@ -140,6 +139,7 @@ export default function Storefront() {
           </div>
         </div>
       </section>
+      <MenuOptions />
       <section id="nosotros" className="px-5 py-20 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-12">
           <Link
