@@ -55,14 +55,20 @@ export default function MenuOptions() {
     if (!selectedWeek) return;
 
     const today = currentDayKey();
-    const todayWithMenu = selectedWeek.days.findIndex(
-      (item) => item.date === today && item.products.length > 0,
+    const todayWithAvailableMenu = selectedWeek.days.findIndex(
+      (item) => item.date === today && hasOrderableProducts(item.products),
     );
-    const nextMenu = selectedWeek.days.findIndex(
-      (item) => item.date >= today && item.products.length > 0,
+    const nextAvailableMenu = selectedWeek.days.findIndex(
+      (item) => item.date >= today && hasOrderableProducts(item.products),
     );
     const firstMenu = selectedWeek.days.findIndex((item) => item.products.length > 0);
-    setDayIndex(todayWithMenu >= 0 ? todayWithMenu : nextMenu >= 0 ? nextMenu : Math.max(firstMenu, 0));
+    setDayIndex(
+      todayWithAvailableMenu >= 0
+        ? todayWithAvailableMenu
+        : nextAvailableMenu >= 0
+          ? nextAvailableMenu
+          : Math.max(firstMenu, 0),
+    );
   }, [weekIndex, weeks]);
 
   useEffect(() => {
@@ -351,6 +357,12 @@ function addCalendarDays(date: string, amount: number) {
   const value = new Date(`${date}T00:00:00.000Z`);
   value.setUTCDate(value.getUTCDate() + amount);
   return value.toISOString().slice(0, 10);
+}
+
+function hasOrderableProducts(products: Product[]) {
+  return products.some(
+    (product) => product.available && (!product.stockManaged || product.stock > 0),
+  );
 }
 
 function normalizedCategory(category?: Category) {
