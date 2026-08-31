@@ -89,6 +89,12 @@ export default function Storefront() {
               >
                 Ver menú de hoy <ArrowRightIcon className="h-4 w-4" />
               </a>
+              <Link
+                href="/promociones"
+                className="flex items-center gap-3 rounded-full bg-orange px-7 py-4 text-sm font-extrabold text-white shadow-lg shadow-orange/20 hover:-translate-y-1 sm:px-9 sm:py-5 sm:text-base"
+              >
+                ¡Quiero mi promo! <ArrowRightIcon className="h-4 w-4" />
+              </Link>
             </div>
             <div className="mt-8 flex flex-col gap-2 text-[11px] font-bold text-forest/70 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-5 sm:text-xs">
               <span className="flex items-center gap-2">
@@ -141,13 +147,7 @@ export default function Storefront() {
       </section>
       <MenuOptions />
       <section id="nosotros" className="px-5 py-20 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-12">
-          <Link
-            href="/promociones"
-            className="inline-flex rounded-full bg-orange px-12 py-5 text-lg font-extrabold text-white shadow-xl shadow-orange/25 hover:bg-forest sm:px-16 sm:py-6 sm:text-xl"
-          >
-            ¡Quiero mi promo!
-          </Link>
+        <div className="mx-auto flex max-w-7xl flex-col items-center">
           <div className="flex w-full flex-col items-center justify-between gap-8 rounded-[2.5rem] bg-[#e7dccb] p-8 md:flex-row md:p-12">
             <div>
               <h2 className="font-display text-3xl text-forest sm:text-4xl">
