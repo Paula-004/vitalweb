@@ -27,7 +27,9 @@ export async function apiRequest<T>(endpoint:string,options:ApiRequestOptions={}
   const timeoutController=new AbortController(),timeout=setTimeout(()=>timeoutController.abort('timeout'),timeoutMs),signal=combineSignals(init.signal,timeoutController.signal)
   try{
    const token=await tokenProvider(),response=await fetch(`${appConfig.apiUrl}${endpoint}`,{...init,signal,headers:{Accept:'application/json','Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{ }),...init.headers}})
-   if(response.status===401){await unauthorizedHandler();throw new DataSourceError('Tu sesión venció. Volvé a iniciar sesión.',401)}
+   // Un 401 sólo significa "sesión vencida" cuando la solicitud llevaba una
+   // sesión activa. En login no hay token: allí mostramos el mensaje real del backend.
+   if(response.status===401&&token){await unauthorizedHandler();throw new DataSourceError('Tu sesión venció. Volvé a iniciar sesión.',401)}
    if(!response.ok){const payload=await safeJson(response);const message=typeof payload==='object'&&payload&&'message'in payload?String(payload.message):`La API respondió ${response.status} en ${endpoint}.`;throw new DataSourceError(message,response.status,payload)}
    return normalizeResponse<T>(await safeJson(response))
   }catch(error){const normalized=normalizeError(error);if(attempt<retries&&isRetryable(normalized)){await delay(retryDelayMs*2**attempt);continue}throw normalized}finally{clearTimeout(timeout)}

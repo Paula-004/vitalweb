@@ -11,32 +11,32 @@ beforeEach(() => clearStorage())
 
 describe('login', () => {
   it('devuelve la sesión del cliente con credenciales válidas', async () => {
-    const { data } = await authService.login({ email: DEMO_EMAIL, password: DEMO_PASSWORD })
+    const { data } = await authService.login({ username: DEMO_EMAIL, password: DEMO_PASSWORD })
     expect(data.user.firstName).toBe('Marina')
     expect(data.accessToken).toBeTruthy()
   })
 
   it('ignora mayúsculas en el correo', async () => {
-    const { data } = await authService.login({ email: 'MARINA@VITAL.DEMO', password: DEMO_PASSWORD })
+    const { data } = await authService.login({ username: 'MARINA@VITAL.DEMO', password: DEMO_PASSWORD })
     expect(data.user.firstName).toBe('Marina')
   })
 
   it('rechaza una contraseña incorrecta con 401', async () => {
-    await expect(authService.login({ email: DEMO_EMAIL, password: 'incorrecta' }))
+    await expect(authService.login({ username: DEMO_EMAIL, password: 'incorrecta' }))
       .rejects.toMatchObject({ status: 401 })
   })
 
   it('no revela si la cuenta existe cuando falla', async () => {
-    const error = await authService.login({ email: 'nadie@vital.demo', password: 'x' }).catch(cause => cause)
+    const error = await authService.login({ username: 'nadie@vital.demo', password: 'x' }).catch(cause => cause)
     expect(error).toBeInstanceOf(DataSourceError)
-    expect(error.message).toBe('Correo o contraseña incorrectos.')
+    expect(error.message).toBe('Teléfono, correo o contraseña incorrectos.')
   })
 })
 
 describe('registro', () => {
   const nuevaCuenta = (overrides: Partial<Parameters<typeof authService.register>[0]> = {}) => ({
-    fullName: 'Ana Ruiz',
-    email: `ana${Date.now()}@vital.demo`,
+    firstName: 'Ana',
+    lastName: 'Ruiz',
     phone: '+54 9 11 5555 0303',
     password: 'unaclave123',
     ...overrides,
@@ -45,7 +45,6 @@ describe('registro', () => {
   it('crea la cuenta y deja al cliente con sesión iniciada', async () => {
     const input = nuevaCuenta()
     const { data } = await authService.register(input)
-    expect(data.user.email).toBe(input.email)
     expect(data.user.firstName).toBe('Ana')
     expect(data.user.lastName).toBe('Ruiz')
     expect(data.user.phone).toBe(input.phone)
@@ -53,8 +52,10 @@ describe('registro', () => {
     expect(data.accessToken).toBeTruthy()
   })
 
-  it('rechaza con 409 un correo ya registrado', async () => {
-    await expect(authService.register(nuevaCuenta({ email: DEMO_EMAIL })))
+  it('rechaza con 409 un teléfono ya registrado', async () => {
+    const phone = `+54 11 ${String(Date.now()).slice(-8)}`
+    await authService.register(nuevaCuenta({ phone }))
+    await expect(authService.register(nuevaCuenta({ phone })))
       .rejects.toMatchObject({ status: 409 })
   })
 })

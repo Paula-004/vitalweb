@@ -151,6 +151,12 @@ export default function Storefront() {
               >
                 Ver menú de hoy <ArrowRightIcon className="h-4 w-4" />
               </a>
+              <Link
+                href="/promociones"
+                className="flex items-center gap-3 rounded-full bg-orange px-7 py-4 text-sm font-extrabold text-white shadow-lg shadow-orange/20 hover:-translate-y-1 sm:px-9 sm:py-5 sm:text-base"
+              >
+                ¡Quiero mi promo! <ArrowRightIcon className="h-4 w-4" />
+              </Link>
             </div>
             <div className="mt-8 flex flex-col gap-2 text-[11px] font-bold text-forest/70 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-5 sm:text-xs">
               <span className="flex items-center gap-2">
@@ -162,18 +168,17 @@ export default function Storefront() {
         </div>
         <div className="absolute -bottom-1 left-0 h-12 w-full rounded-[50%_50%_0_0/100%_100%_0_0] bg-cream" />
       </section>
-      <MenuOptions />
-      <section id="como" className="bg-forest px-5 py-24 text-cream lg:px-8">
+      <section id="como" className="bg-forest px-5 py-12 text-cream sm:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="max-w-xl">
-            <p className="text-xs font-extrabold uppercase tracking-[.2em] text-orange">
+          <div className="max-w-lg">
+            <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-orange sm:text-xs">
               Así de simple
             </p>
-            <h2 className="mt-3 font-display text-4xl sm:text-5xl">
+            <h2 className="mt-2 font-display text-2xl font-medium sm:text-3xl">
               Tu almuerzo resuelto en tres pasos.
             </h2>
           </div>
-          <div className="mt-14 grid gap-8 md:grid-cols-3">
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
             {[
               ["01", "Elegí", "Explorá el menú del día y armá tu combinación."],
               [
@@ -189,12 +194,12 @@ export default function Storefront() {
                 "Recibí comida casera, fresca y lista para comer.",
               ],
             ].map((x) => (
-              <div key={x[0]} className="border-t border-cream/20 pt-6">
-                <span className="font-display text-5xl text-orange">
+              <div key={x[0]} className="border-t border-cream/20 pt-4">
+                <span className="font-display text-3xl text-orange">
                   {x[0]}
                 </span>
-                <h3 className="mt-6 text-xl font-extrabold">{x[1]}</h3>
-                <p className="mt-2 max-w-xs text-sm leading-6 text-cream/65">
+                <h3 className="mt-3 text-base font-bold">{x[1]}</h3>
+                <p className="mt-1.5 max-w-xs text-xs leading-5 text-cream/65">
                   {x[2]}
                 </p>
               </div>
@@ -202,14 +207,9 @@ export default function Storefront() {
           </div>
         </div>
       </section>
+      <MenuOptions />
       <section id="nosotros" className="px-5 py-20 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-12">
-          <Link
-            href="/promociones"
-            className="inline-flex rounded-full bg-orange px-12 py-5 text-lg font-extrabold text-white shadow-xl shadow-orange/25 hover:bg-forest sm:px-16 sm:py-6 sm:text-xl"
-          >
-            ¡Quiero mi promo!
-          </Link>
+        <div className="mx-auto flex max-w-7xl flex-col items-center">
           <div className="flex w-full flex-col items-center justify-between gap-8 rounded-[2.5rem] bg-[#e7dccb] p-8 md:flex-row md:p-12">
             <div>
               <h2 className="font-display text-3xl text-forest sm:text-4xl">
@@ -229,32 +229,6 @@ export default function Storefront() {
           </div>
         </div>
       </section>
-      <footer className="bg-[#102b20] px-5 py-10 text-cream lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
-          <Logo light />
-          <div className="flex flex-col items-center gap-2 text-xs text-cream/65 sm:items-end">
-            <p className="text-cream/50">
-              © 2026 Vital Food Viandas · Hecho con sabor
-            </p>
-            <a
-              href="https://www.google.com/maps/search/?api=1&query=Neyra+144%2C+Gualeguaychu%2C+Entre+Rios"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-orange"
-            >
-              Ubicación: Neyra 144, Gualeguaychú
-            </a>
-            <a
-              href="https://wa.me/5493446205554"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-orange"
-            >
-              WhatsApp: 3446205554
-            </a>
-          </div>
-        </div>
-      </footer>
       {open && (
         <>
           <button

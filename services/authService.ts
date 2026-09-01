@@ -52,9 +52,13 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerLogin, { method: 'POST', body: JSON.stringify(input) })
       return { ...response, data: toSession(response.data) }
     }
-    const email = input.email.trim().toLowerCase()
-    const user = mockUsers.find(item => (item.email ?? '').toLowerCase() === email)
-    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Correo o contraseña incorrectos.', 401)
+    const login = input.username.trim().toLowerCase()
+    const user = mockUsers.find(item =>
+      (item.email ?? '').toLowerCase() === login ||
+      (item.username ?? '').toLowerCase() === login ||
+      (item.phone ?? '').replace(/\D/g, '') === login.replace(/\D/g, ''),
+    )
+    if (!user || input.password !== DEMO_PASSWORD) throw new DataSourceError('Teléfono, correo o contraseña incorrectos.', 401)
     return mockResponse(session(user))
   },
 
@@ -63,8 +67,10 @@ export const authService = {
       const response = await apiRequest<Record<string, unknown>>(apiEndpoints.customerRegister, {
         method: 'POST',
         body: JSON.stringify({
-          fullName: input.fullName.trim(),
-          email: input.email.trim().toLowerCase(),
+          // El teléfono también funciona como credencial interna de acceso.
+          username: input.phone.replace(/\D/g, ''),
+          firstName: input.firstName.trim(),
+          lastName: input.lastName.trim(),
           phone: input.phone.trim(),
           password: input.password,
           // Se omite si viene vacío: el backoffice rechaza un código inexistente,
@@ -74,12 +80,11 @@ export const authService = {
       })
       return { ...response, data: toSession(response.data) }
     }
-    const email = input.email.trim().toLowerCase()
-    if (mockUsers.some(user => (user.email ?? '').toLowerCase() === email)) {
-      throw new DataSourceError('Ya existe una cuenta con ese correo.', 409)
+    const username = input.phone.replace(/\D/g, '')
+    if (mockUsers.some(user => (user.username ?? '').replace(/\D/g, '') === username)) {
+      throw new DataSourceError('Ese teléfono ya tiene una cuenta.', 409)
     }
-    const [firstName = '', ...rest] = input.fullName.trim().split(/\s+/).filter(Boolean)
-    const user = { id: `user-mock-${Date.now()}`, firstName, lastName: rest.join(' '), email, phone: input.phone.trim(), addresses: [], createdAt: new Date().toISOString() }
+    const user = { id: `user-mock-${Date.now()}`, username, firstName: input.firstName.trim(), lastName: input.lastName.trim(), phone: input.phone.trim(), addresses: [], createdAt: new Date().toISOString() }
     mockUsers.push(user)
     return mockResponse(session(user))
   },

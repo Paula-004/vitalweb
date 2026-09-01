@@ -8,14 +8,13 @@ import { authService } from '@/services'
 type Mode = 'login' | 'register' | 'recover' | 'reset'
 
 const MIN_PASSWORD = 8
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PHONE_DIGITS = 8
 
 /** Validación previa al envío: evita viajes al backoffice por datos obviamente incompletos. */
 function validate(mode: Mode, values: Record<string, string>): string {
-  if ((mode === 'login' || mode === 'register') && !EMAIL.test((values.email ?? '').trim())) return 'Ingresá un correo válido.'
+  if (mode === 'login' && (values.phone ?? '').replace(/\D/g, '').length < MIN_PHONE_DIGITS) return 'Ingresá un teléfono válido.'
   if (mode === 'register') {
-    if ((values.fullName?.trim().length ?? 0) < 3) return 'Ingresá tu nombre y apellido.'
+    if (!values.firstName?.trim() || !values.lastName?.trim()) return 'Ingresá tu nombre y apellido.'
     if ((values.phone ?? '').replace(/\D/g, '').length < MIN_PHONE_DIGITS) return 'Ingresá un teléfono de contacto válido.'
   }
   if (mode === 'reset') {
@@ -52,11 +51,11 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
     setError('')
     setMessage('')
     try {
-      if (mode === 'login') { await auth.login({ email: values.email, password: values.password }); router.push(next) }
+      if (mode === 'login') { await auth.login({ username: values.phone, password: values.password }); router.push(next) }
       if (mode === 'register') {
         await auth.register({
-          fullName: values.fullName,
-          email: values.email,
+          firstName: values.firstName,
+          lastName: values.lastName,
           phone: values.phone,
           password: values.password,
           sellerCode,
@@ -105,8 +104,11 @@ export default function AuthScreen({ mode }: { mode: Mode }) {
       </div>
     )}
     <form onSubmit={submit} noValidate className="mt-6 space-y-4">
-      {mode === 'register' && <Field name="fullName" label="Nombre y apellido" autoComplete="name" />}
-      {mode !== 'reset' && <Field name="email" label="Correo electrónico" type="email" autoComplete="email" defaultValue={mode === 'login' && authService.isMock ? 'marina@vital.demo' : ''} />}
+      {mode === 'register' && <div className="grid grid-cols-2 gap-3">
+        <Field name="firstName" label="Nombre" autoComplete="given-name" />
+        <Field name="lastName" label="Apellido" autoComplete="family-name" />
+      </div>}
+      {mode === 'login' && <Field name="phone" label="Teléfono" type="tel" autoComplete="tel" />}
       {mode === 'register' && <Field name="phone" label="Teléfono" type="tel" autoComplete="tel" hint="Lo usamos para coordinar la entrega." />}
       <Field name="password" label="Contraseña" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} defaultValue={mode === 'login' && authService.isMock ? 'vital123' : ''} />
       {mode === 'reset' && <Field name="passwordConfirm" label="Repetir contraseña" type="password" autoComplete="new-password" />}

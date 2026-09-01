@@ -56,14 +56,20 @@ export default function MenuOptions() {
     if (!selectedWeek) return;
 
     const today = currentDayKey();
-    const todayWithMenu = selectedWeek.days.findIndex(
-      (item) => item.date === today && item.products.length > 0,
+    const todayWithAvailableMenu = selectedWeek.days.findIndex(
+      (item) => item.date === today && hasOrderableProducts(item.products),
     );
-    const nextMenu = selectedWeek.days.findIndex(
-      (item) => item.date >= today && item.products.length > 0,
+    const nextAvailableMenu = selectedWeek.days.findIndex(
+      (item) => item.date >= today && hasOrderableProducts(item.products),
     );
     const firstMenu = selectedWeek.days.findIndex((item) => item.products.length > 0);
-    setDayIndex(todayWithMenu >= 0 ? todayWithMenu : nextMenu >= 0 ? nextMenu : Math.max(firstMenu, 0));
+    setDayIndex(
+      todayWithAvailableMenu >= 0
+        ? todayWithAvailableMenu
+        : nextAvailableMenu >= 0
+          ? nextAvailableMenu
+          : Math.max(firstMenu, 0),
+    );
   }, [weekIndex, weeks]);
 
   useEffect(() => {
@@ -147,12 +153,31 @@ export default function MenuOptions() {
     }
   };
 
+  const changeCatalogQuantity = (product: Product, amount: number) => {
+    if (!cart.ready) return;
+    const cartItem = cart.cart.items.find((item) => item.productId === product.id);
+    const quantity = cartItem?.quantity ?? 0;
+
+    try {
+      if (amount > 0) {
+        cart.add(product);
+        notify(`${product.name} agregado al carrito.`);
+      } else if (quantity > 0) {
+        cart.updateQuantity(product.id, quantity - 1);
+      }
+    } catch (cause) {
+      notify(cause instanceof Error ? cause.message : "No se pudo actualizar el carrito.", "error");
+    }
+  };
+
   return (
     <section id="menu" className="grain px-5 py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
-          <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">Tu vianda del día</h2>
+          <h2 className="mt-3 rounded-xl bg-forest/[0.08] px-4 py-3 font-display text-3xl font-semibold leading-tight text-forest sm:px-5 sm:text-4xl">
+            Tu vianda del día
+          </h2>
           <p className="mt-4 text-sm leading-6 text-ink/65">
             Elegí el día y encontrá tu opción general, keto, veggie o proteica.
           </p>
@@ -279,10 +304,15 @@ export default function MenuOptions() {
 
         {visibleSections.map((section) => (
           <div key={section.title} className="mt-14">
-            <h3 className="font-display text-3xl text-forest">{section.title}</h3>
+            <h3 className="rounded-xl bg-forest/[0.08] px-4 py-2.5 font-display text-2xl font-semibold leading-tight text-forest sm:px-5 sm:text-3xl">
+              {section.title}
+            </h3>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {section.products.map((product) => (
-                <article key={product.id} className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-soft">
+              {section.products.map((product) => {
+                const quantity = cart.cart.items.find((item) => item.productId === product.id)?.quantity ?? 0;
+                const soldOut = !product.available || product.stock < 1;
+                return (
+                <article key={product.id} className={`relative overflow-hidden rounded-2xl border bg-white p-5 shadow-soft transition ${quantity ? "border-orange ring-2 ring-orange/20" : "border-transparent"}`}>
                   <FavoriteButton productId={product.id} className="absolute right-8 top-8 z-10 h-10 w-10" />
                   <ProductImage
                     src={product.imageUrl}
@@ -293,11 +323,17 @@ export default function MenuOptions() {
                   <h4 className="text-lg font-extrabold uppercase text-forest">{product.name}</h4>
                   <p className="mt-2 text-sm font-extrabold text-orange">{money(product.promotionalPrice ?? product.price)}</p>
                   <p className="mt-3 text-xs leading-5 text-ink/65">{product.shortDescription}</p>
-                  <Link href={appRoutes.product(product.slug)} className="mt-4 inline-block text-xs font-extrabold text-orange">
-                    Ver detalle
-                  </Link>
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-forest/10 pt-4">
+                    <Link href={appRoutes.product(product.slug)} className="text-xs font-extrabold text-orange">Ver detalle</Link>
+                    <div className="flex items-center gap-3 rounded-full bg-cream/70 p-1">
+                      <button disabled={quantity === 0} onClick={() => changeCatalogQuantity(product, -1)} aria-label={`Quitar ${product.name}`} className="grid h-8 w-8 place-items-center rounded-full text-lg font-extrabold text-forest disabled:opacity-25">−</button>
+                      <b className="min-w-5 text-center text-sm text-forest">{quantity}</b>
+                      <button disabled={soldOut || quantity >= product.stock} onClick={() => changeCatalogQuantity(product, 1)} aria-label={`Agregar ${product.name}`} className="grid h-8 w-8 place-items-center rounded-full bg-orange text-lg font-extrabold text-white disabled:opacity-25">+</button>
+                    </div>
+                  </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}
@@ -322,6 +358,12 @@ function addCalendarDays(date: string, amount: number) {
   const value = new Date(`${date}T00:00:00.000Z`);
   value.setUTCDate(value.getUTCDate() + amount);
   return value.toISOString().slice(0, 10);
+}
+
+function hasOrderableProducts(products: Product[]) {
+  return products.some(
+    (product) => product.available && (!product.stockManaged || product.stock > 0),
+  );
 }
 
 function normalizedCategory(category?: Category) {
@@ -405,7 +447,9 @@ function Frame({ children }: { children: React.ReactNode }) {
     <section id="menu" className="grain px-5 py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <p className="text-xs font-extrabold uppercase tracking-[.22em] text-orange">Menús Vital</p>
-        <h2 className="mt-3 font-display text-4xl font-semibold text-forest sm:text-5xl">Elegí tu menú del mes</h2>
+        <h2 className="mt-3 rounded-xl bg-forest/[0.08] px-4 py-3 font-display text-3xl font-semibold leading-tight text-forest sm:px-5 sm:text-4xl">
+          Elegí tu menú del mes
+        </h2>
         <div className="mt-6">{children}</div>
       </div>
     </section>
