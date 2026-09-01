@@ -1,0 +1,57 @@
+workflows:
+  ios-capacitor-unsigned:
+    name: VitalWeb iOS unsigned build
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+
+    environment:
+      node: v22.11.0
+      xcode: latest
+      cocoapods: default
+      vars:
+        XCODE_PROJECT: App.xcodeproj
+        XCODE_SCHEME: App
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+
+      - name: Build Next.js for Capacitor
+        script: npm run build:mobile
+
+      - name: Synchronize Capacitor platforms
+        script: npm run cap:sync
+
+      - name: Install CocoaPods dependencies if present
+        script: |
+          if [ -f ios/App/Podfile ]; then
+            cd ios/App
+            pod install
+          else
+            echo "No Podfile found; this project uses Swift Package Manager."
+          fi
+
+      - name: Resolve iOS Swift packages
+        script: |
+          cd "$CM_BUILD_DIR/ios/App"
+          xcodebuild -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+
+      - name: Build unsigned iOS app for simulator
+        script: |
+          cd "$CM_BUILD_DIR/ios/App"
+          xcodebuild build \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+    artifacts:
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+      - /tmp/xcodebuild_logs/*.log
