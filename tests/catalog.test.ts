@@ -92,31 +92,39 @@ describe('querystring de filtros', () => {
 
 describe('validación del carrito', () => {
   it('acepta un producto sin restricción de días', () => {
-    expect(cartService.validate(cart(), [product()], 0, { date: '2026-07-15' })).toEqual([])
+    expect(cartService.validate(cart(), [product()])).toEqual([])
   })
 
-  it('rechaza el producto cuando la fecha cae en un día no disponible', () => {
-    const issues = cartService.validate(cart(), [product({ availableDays: ['martes'] })], 0, { date: '2026-07-15' })
-    expect(issues[0]).toContain('no está disponible')
+  it('acepta productos con stock aunque tengan días restringidos', () => {
+    const issues = cartService.validate(cart(), [product({ availableDays: ['martes'] })])
+    expect(issues).toEqual([])
   })
 
   it('acepta el producto en un día disponible', () => {
     // 2026-07-14 es martes.
-    expect(cartService.validate(cart(), [product({ availableDays: ['martes'] })], 0, { date: '2026-07-14' })).toEqual([])
+    expect(cartService.validate(cart(), [product({ availableDays: ['martes'] })])).toEqual([])
   })
 
   it('avisa cuando se pide más de lo que hay en stock', () => {
-    const issues = cartService.validate(cart(9), [product({ stock: 2 })], 0, { date: '2026-07-14' })
+    const issues = cartService.validate(cart(9), [product({ stock: 2 })])
     expect(issues[0]).toContain('Sólo quedan 2')
   })
 
-  it('avisa cuando no se alcanza el monto mínimo', () => {
-    const issues = cartService.validate(cart(), [product()], 20000, { date: '2026-07-14' })
-    expect(issues.some(issue => issue.includes('monto mínimo'))).toBe(true)
+  it('permite continuar independientemente del monto', () => {
+    const issues = cartService.validate(cart(), [product()])
+    expect(issues).toEqual([])
   })
 
+  it('identifica el producto agotado aunque no esté disponible por fecha', () => {
+    const agotado = product({ name: 'Menú Keto', stock: 0, available: false })
+    expect(cartService.validate(cart(), [agotado])).toEqual(['Menú Keto no tiene stock. Quitalo del carrito para continuar.'])
+  })
+
+  it('permite comprar con stock aunque available sea falso', () => {
+    expect(cartService.validate(cart(), [product({ available: false })])).toEqual([])
+  })
   it('avisa si el carrito está vacío', () => {
-    expect(cartService.validate({ items: [] }, [], 0)).toContain('El carrito está vacío.')
+    expect(cartService.validate({ items: [] }, [])).toContain('El carrito está vacío.')
   })
 
   it('calcula el día de la semana en español', () => {

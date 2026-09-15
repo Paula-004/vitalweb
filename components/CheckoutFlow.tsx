@@ -105,7 +105,6 @@ export default function CheckoutFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [couponCode, zoneId, date, delivery, session?.user.id])
 
-  const minimumOrder = storeConfig?.minimumOrder ?? 0
   const shipping = delivery === 'pickup' || freeShipping ? 0 : quote?.cost ?? 0
   const total = Math.max(0, cart.subtotal - couponDiscount) + shipping
   const slots = quote?.timeSlots ?? []
@@ -152,7 +151,7 @@ export default function CheckoutFlow() {
         const message = stepError(index)
         if (message) { setStep(index); throw new Error(message) }
       }
-      const issues = cartService.validate(cart.cart, cart.products, usesMealPlan ? 0 : minimumOrder, { date })
+      const issues = cartService.validate(cart.cart, cart.products)
       if (issues.length) throw new Error(issues[0])
 
       const shippingAddress = delivery === 'delivery' ? (savedAddress ?? makeAddress(address, zoneId)) : undefined
