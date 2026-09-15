@@ -391,6 +391,7 @@ function normalizedProductName(product: Product) {
 function isDailyMenuProduct(product: Product, category?: Category) {
   const name = normalizedProductName(product);
   const categoryName = normalizedCategory(category);
+  if (catalogSections.some((section) => section.matches(categoryName))) return false;
   return /^menu\b/.test(name) || /\bmenu\b|\bmenus\b|\bvianda\b|\bviandas\b/.test(categoryName);
 }
 
@@ -411,7 +412,9 @@ function dailyMenuByType(products: Product[], categories: Map<string, Category>)
     const product = [...uniqueProducts].reverse().find(
       (item) =>
         !selected.has(item.id) &&
-        matches(normalizedProduct(item, categories.get(item.categoryId))),
+        matches(item.badge && /^(GENERAL|KETO|VEGGIE|PROTEICA)$/i.test(item.badge)
+          ? item.badge.toLowerCase()
+          : normalizedProduct(item, categories.get(item.categoryId))),
     );
     if (!product) continue;
     selected.add(product.id);
