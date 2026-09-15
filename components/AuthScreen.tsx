@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '@/contexts/AuthContext'
 import { authService } from '@/services'
 
@@ -141,16 +142,31 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
 }
 
 function Field({ name, label, type = 'text', defaultValue, autoComplete, optional, hint }: { name: string; label: string; type?: string; defaultValue?: string; autoComplete?: string; optional?: boolean; hint?: string }) {
-  return <label className="block text-xs font-bold text-forest">
-    {label}
-    <input
-      required={!optional}
-      name={name}
-      type={type}
-      defaultValue={defaultValue}
-      autoComplete={autoComplete}
-      className="mt-2 w-full rounded-xl border border-forest/10 bg-white px-4 py-3 font-normal outline-none focus:border-orange"
-    />
+  const [passwordVisible, setPasswordVisible] = useState(false)
+  const isPassword = type === 'password'
+
+  return <div className="block text-xs font-bold text-forest">
+    <label htmlFor={name}>{label}</label>
+    <span className="relative mt-2 block">
+      <input
+        id={name}
+        required={!optional}
+        name={name}
+        type={isPassword && passwordVisible ? 'text' : type}
+        defaultValue={defaultValue}
+        autoComplete={autoComplete}
+        className={`w-full rounded-xl border border-forest/10 bg-white py-3 pl-4 font-normal outline-none focus:border-orange ${isPassword ? 'pr-12' : 'pr-4'}`}
+      />
+      {isPassword && <button
+        type="button"
+        onClick={() => setPasswordVisible((visible) => !visible)}
+        aria-label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        aria-pressed={passwordVisible}
+        className="absolute inset-y-0 right-0 grid w-12 place-items-center rounded-r-xl text-forest/55 hover:text-forest focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-orange"
+      >
+        {passwordVisible ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+      </button>}
+    </span>
     {hint && <span className="mt-1.5 block text-[11px] font-normal leading-4 text-forest/50">{hint}</span>}
-  </label>
+  </div>
 }
