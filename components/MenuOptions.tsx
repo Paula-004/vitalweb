@@ -97,20 +97,10 @@ export default function MenuOptions() {
   const week = weeks[Math.min(weekIndex, weeks.length - 1)];
   const day = week.days[Math.min(dayIndex, week.days.length - 1)];
   const dailyProducts = dailyMenuByType(day.products, categories);
-  const sections = groupCatalog(day.products, categories);
-  const dailyProductIds = new Set(dailyProducts.map(({ product }) => product.id));
-  const dailyProductSlugs = new Set(dailyProducts.map(({ product }) => product.slug));
-  const dailyProductNames = new Set(dailyProducts.map(({ product }) => normalizedProductName(product)));
-  const visibleSections = sections
-    .map((section) => ({
-      ...section,
-      products: section.products.filter(
-        (product) =>
-          !dailyProductIds.has(product.id) &&
-          !dailyProductSlugs.has(product.slug) &&
-          !dailyProductNames.has(normalizedProductName(product)),
-      ),
-    }));
+  // Las viandas dependen del día elegido. El resto es un catálogo permanente:
+  // se toma del catálogo público completo y no del menú diario seleccionado.
+  const permanentProducts = buildPermanentCatalog(cart.products, categories, currentDayKey());
+  const visibleSections = groupCatalog(permanentProducts, categories);
 
   const keyOf = (date: string, productId: string) => `${date}|${productId}`;
 
@@ -425,6 +415,50 @@ function dailyMenuByType(products: Product[], categories: Map<string, Category>)
     const product = byLabel.get(label);
     return product ? [{ label, product }] : [];
   });
+}
+
+/**
+ * El backoffice crea una copia fechada del mismo producto cada vez que lo publica
+ * en un menú. Para el catálogo permanente conservamos una sola: primero la copia
+ * disponible sin fecha, luego la disponible más cercana, y finalmente la más
+ * reciente si sólo quedaron publicaciones pasadas.
+ */
+export function buildPermanentCatalog(
+  products: Product[],
+  categories: Map<string, Category>,
+  referenceDate: string,
+) {
+  const grouped = new Map<string, Product[]>();
+
+  for (const product of products) {
+    if (!product.active) continue;
+    const category = categories.get(product.categoryId);
+    const categoryName = normalizedCategory(category);
+    if (!catalogSections.some((section) => section.matches(categoryName))) continue;
+    const key = `${categoryName}|${normalizedProductName(product)}`;
+    grouped.set(key, [...(grouped.get(key) ?? []), product]);
+  }
+
+  return Array.from(grouped.values()).map((copies) =>
+    [...copies].sort((a, b) => comparePermanentCopies(a, b, referenceDate))[0],
+  );
+}
+
+function comparePermanentCopies(a: Product, b: Product, referenceDate: string) {
+  if (a.available !== b.available) return a.available ? -1 : 1;
+
+  const aFuture = !a.availableDate || a.availableDate >= referenceDate;
+  const bFuture = !b.availableDate || b.availableDate >= referenceDate;
+  if (aFuture !== bFuture) return aFuture ? -1 : 1;
+
+  // Un producto genuinamente permanente tiene prioridad sobre sus copias fechadas.
+  if (!a.availableDate !== !b.availableDate) return !a.availableDate ? -1 : 1;
+  if (a.availableDate !== b.availableDate) {
+    return aFuture
+      ? (a.availableDate ?? "").localeCompare(b.availableDate ?? "")
+      : (b.availableDate ?? "").localeCompare(a.availableDate ?? "");
+  }
+  return b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id, undefined, { numeric: true });
 }
 
 function groupCatalog(products: Product[], categories: Map<string, Category>): CatalogSection[] {
