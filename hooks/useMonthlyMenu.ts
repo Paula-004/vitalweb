@@ -20,6 +20,12 @@ export interface MenuWeek {
   days: MenuDay[]
 }
 
+export interface MonthlyMenuData {
+  weeks: MenuWeek[]
+  /** Catálogo completo usado para mantener visibles los productos no diarios. */
+  products: Product[]
+}
+
 /** La semana comercial va de lunes a sábado: el domingo no se publica menú. */
 const DAYS_PER_WEEK = 6
 
@@ -131,10 +137,16 @@ function currentDayKey() {
 }
 
 export function useMonthlyMenu() {
-  const loader = useCallback(async (): Promise<ApiResponse<MenuWeek[]>> => {
+  const loader = useCallback(async (): Promise<ApiResponse<MonthlyMenuData>> => {
     const [products, menus] = await Promise.all([productService.getAll(), menuService.getDailyMenus()])
     const publishedWeeks = buildWeeks(menus.data, products.data)
-    return { data: fillCalendarWeeks(publishedWeeks, currentDayKey()), meta: products.meta }
+    return {
+      data: {
+        weeks: fillCalendarWeeks(publishedWeeks, currentDayKey()),
+        products: products.data,
+      },
+      meta: products.meta,
+    }
   }, [])
   return useAsyncData(loader, [loader])
 }

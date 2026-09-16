@@ -34,7 +34,8 @@ const dailyMenuTypes = [
 export default function MenuOptions() {
   const cart = useCart();
   const { notify } = useNotification();
-  const { data: weeks, loading, error, retry } = useMonthlyMenu();
+  const { data: menuData, loading, error, retry } = useMonthlyMenu();
+  const weeks = menuData?.weeks;
   const [weekIndex, setWeekIndex] = useState(0);
   const [dayIndex, setDayIndex] = useState(0);
   // Cantidad elegida por fecha y producto: permite armar varios días en una sola pasada.
@@ -99,7 +100,7 @@ export default function MenuOptions() {
   const dailyProducts = dailyMenuByType(day.products, categories);
   // Las viandas dependen del día elegido. El resto es un catálogo permanente:
   // se toma del catálogo público completo y no del menú diario seleccionado.
-  const permanentProducts = buildPermanentCatalog(cart.products, categories, currentDayKey());
+  const permanentProducts = buildPermanentCatalog(menuData?.products ?? [], categories, currentDayKey());
   const visibleSections = groupCatalog(permanentProducts, categories);
 
   const keyOf = (date: string, productId: string) => `${date}|${productId}`;
